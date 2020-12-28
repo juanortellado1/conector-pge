@@ -39,18 +39,12 @@ public interface ConnectorService {
 
     void saveGlobalConfig(ConnectorGlobalConfiguration globalConfig) throws ConnectorException;
 
-    void updateConnectorPath(Connector connector);
-
     void deleteConnector(Long id);
 
-    List<RoleOperation> getRoleoperationsOperationFromWSDL(Connector connector,
-            String operation, String soapVersion);
+    Optional<RoleOperation> getRoleoperationsOperationFromWSDL(Connector connector,
+            String operation);
 
     ConnectorTypeHolder getConnectorTypeByPort(final String port) throws ConnectorException;
 
-    String getPortByConnector(final Connector connector);
-
     String getLocationBasedOnConnector(Connector connector) throws ConnectorException;
-
-    int getMaxUploadSize() throws ConnectorException;
 }

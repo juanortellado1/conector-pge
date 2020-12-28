@@ -1,26 +1,20 @@
 package gub.agesic.connector.integration.actions;
 
-import gub.agesic.connector.dataaccess.entity.Configuration;
-import gub.agesic.connector.dataaccess.entity.Connector;
-import gub.agesic.connector.dataaccess.entity.ConnectorGlobalConfiguration;
-import gub.agesic.connector.dataaccess.entity.RoleOperation;
-import gub.agesic.connector.dataaccess.repository.ConnectorTypeHolder;
-import gub.agesic.connector.enums.SoapVersion;
-import gub.agesic.connector.exceptions.ConnectorException;
-import gub.agesic.connector.integration.services.PoolConnectionService;
-import gub.agesic.connector.services.dbaccess.ConnectorService;
-import gub.agesic.connector.services.dbaccess.DefaultConnectorService;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.ssl.DefaultHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.ssl.SSLContexts;
+import java.io.IOException;
+import java.io.StringReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+import javax.annotation.PostConstruct;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.soap.SOAPException;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.integration.http.HttpHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
@@ -30,28 +24,17 @@ import org.springframework.xml.xpath.XPathExpressionFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
-import uy.gub.agesic.pge.XMLUtils;
-import uy.gub.agesic.pge.beans.STSResponse;
-import uy.gub.agesic.pge.client.PGEClient;
-import uy.gub.agesic.pge.client.PGEClientBasic;
-import uy.gub.agesic.pge.exceptions.RequestSecurityTokenException;
-import uy.gub.agesic.pge.opensaml.OpenSamlBootstrap;
 
-import javax.annotation.PostConstruct;
-import javax.net.ssl.SSLContext;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.soap.SOAPException;
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import gub.agesic.connector.dataaccess.entity.Configuration;
+import gub.agesic.connector.dataaccess.entity.Connector;
+import gub.agesic.connector.dataaccess.entity.RoleOperation;
+import gub.agesic.connector.dataaccess.repository.ConnectorTypeHolder;
+import gub.agesic.connector.exceptions.ConnectorException;
+import gub.agesic.connector.integration.pgeclient.beans.STSResponse;
+import gub.agesic.connector.integration.pgeclient.client.PGEClient;
+import gub.agesic.connector.integration.pgeclient.exceptions.RequestSecurityTokenException;
+import gub.agesic.connector.integration.pgeclient.opensaml.OpenSamlBootstrap;
+import gub.agesic.connector.services.dbaccess.ConnectorService;
 
 /**
  * Created by adriancur on 31/10/17.
@@ -70,7 +53,8 @@ public class WSInvokeService implements MessageProcessor<String, String> {
     private ConnectorService connectorService;
 
     @Autowired
-    private PoolConnectionService poolConnectionService;
+    @Qualifier(value = "PGEClientCache")
+    private PGEClient pgeClient;
 
     @Autowired
     private WSInvoke wsinvoke;
@@ -103,24 +87,10 @@ public class WSInvokeService implements MessageProcessor<String, String> {
         if (connector.isPresent()) {
             // Find operation and reference it by a transient field to use
             // later.
-            final List<RoleOperation> roleOperations = connectorService
+            final Optional<RoleOperation> roleOperation = connectorService
                     .getRoleoperationsOperationFromWSDL(connector.get(),
-                            getOperationFromMessage(message), getSoapVersionFromMessage(message));
-
-            if (roleOperations.isEmpty())
-                throw new MessageProcessorException("No se pudo determinar la operación asociada a la petición");
-
-            connector.get().setActualRoleOperation(roleOperations.get(0));
-
-            if (roleOperations.size() > 1) {
-                for (RoleOperation operation : roleOperations) {
-                    String action = operation.getWsaAction();
-                    if (!action.isEmpty() && message.getHeaders().containsValue(String.format("\"%s\"", action))) {
-                        connector.get().setActualRoleOperation(operation);
-                    }
-                }
-            }
-
+                            getOperationFromMessage(message));
+            connector.get().setActualRoleOperation(roleOperation.get());
             final String policyName;
 
             try {
@@ -151,59 +121,8 @@ public class WSInvokeService implements MessageProcessor<String, String> {
             // Authenticate to the PGE
             final STSResponse response;
             try {
-                final ConnectorGlobalConfiguration globalConfiguration = connectorService.getGlobalConfigurationByType(connector.get().getType());
-                String stsGlobalUrl = globalConfiguration.getStsGlobalUrl();
-
-                //Configuration
-                uy.gub.agesic.pge.pojos.Configuration conf = new uy.gub.agesic.pge.pojos.Configuration();
-                conf.setAliasKeystore(configuration.getAliasKeystore());
-                conf.setDirKeystore(configuration.getDirKeystore());
-                conf.setDirKeystoreOrg(configuration.getDirKeystoreOrg());
-                conf.setDirKeystoreSsl(configuration.getDirKeystoreSsl());
-                conf.setPasswordKeystore(configuration.getPasswordKeystore());
-                conf.setPasswordKeystoreOrg(configuration.getPasswordKeystoreOrg());
-                conf.setPasswordKeystoreSsl(configuration.getPasswordKeystoreSsl());
-
-                //Connector
-                RoleOperation ro = connector.get().getActualRoleOperation();
-
-                uy.gub.agesic.pge.pojos.RoleOperation roleOperation = new uy.gub.agesic.pge.pojos.RoleOperation();
-                roleOperation.setOperationFromWSDL(ro.getOperationFromWSDL());
-                roleOperation.setOperationInputName(ro.getOperationInputName());
-                roleOperation.setRole(ro.getRole());
-                roleOperation.setSoapVersion(ro.getSoapVersion());
-                roleOperation.setWsaAction(ro.getWsaAction());
-
-                uy.gub.agesic.pge.pojos.Connector conn = new uy.gub.agesic.pge.pojos.Connector();
-                conn.setActualRoleOperation(roleOperation);
-                conn.setEnableCacheTokens(connector.get().isEnableCacheTokens());
-                conn.setEnableSTSLocal(connector.get().isEnableSTSLocal());
-                conn.setIssuer(connector.get().getIssuer());
-                conn.setStsLocalUrl(connector.get().getStsLocalUrl());
-                conn.setUsername(connector.get().getUsername());
-                conn.setWsaTo(connector.get().getWsaTo());
-
-                //############
-                KeyStore keystore;
-                KeyStore truststoreSSL;
-                try {
-                    keystore = XMLUtils.prepareKeystore(configuration.getDirKeystoreSsl(), configuration.getPasswordKeystoreSsl());
-                    truststoreSSL = XMLUtils.prepareKeystore(configuration.getDirKeystore(), configuration.getPasswordKeystore());
-                } catch (final KeyStoreException | IOException e) {
-                    throw new RequestSecurityTokenException(e, 901);
-                }
-                final String url;
-                if (connector.get().isEnableSTSLocal()) {
-                    url = connector.get().getStsLocalUrl();
-                } else {
-                    url = stsGlobalUrl;
-                }
-
-                CloseableHttpClient closeableHttpClient = prepareClient(keystore, configuration, truststoreSSL, url);
-                //############
-
-                PGEClient pgeClient = new PGEClientBasic();
-                response = pgeClient.requestSecurityToken(conf, conn, policyName, url, closeableHttpClient);
+                response = pgeClient.requestSecurityToken(configuration, connector.get(),
+                        policyName);
             } catch (final RequestSecurityTokenException exception) {
                 throw new MessageProcessorException("Error al solicitar un token saml al STS",
                         exception);
@@ -232,38 +151,11 @@ public class WSInvokeService implements MessageProcessor<String, String> {
 
     }
 
-    private CloseableHttpClient prepareClient(final KeyStore keystore, final Configuration configuration, final KeyStore keyStoreSSL, final String url) {
-        try {
-            final SSLContext sslContext = SSLContexts.custom()
-                    .loadTrustMaterial(keyStoreSSL, new TrustStrategy() {
-                        @Override
-                        public boolean isTrusted(final X509Certificate[] chain,
-                                                 final String authType) throws CertificateException {
-                            return true;
-                        }
-                    })
-                    .loadKeyMaterial(keystore, configuration.getPasswordKeystoreSsl().toCharArray())
-                    .build();
-            final HttpClientBuilder builder = HttpClientBuilder.create();
-            final SSLConnectionSocketFactory sslConnectionFactory = new SSLConnectionSocketFactory(
-                    sslContext.getSocketFactory(), new DefaultHostnameVerifier());
-
-            builder.setSSLSocketFactory(sslConnectionFactory);
-            final Registry<ConnectionSocketFactory> registry = RegistryBuilder.<ConnectionSocketFactory>create().register("https", sslConnectionFactory).build();
-
-            builder.setConnectionManager(poolConnectionService.getPoolConnectionManagerByUrl(url, registry));
-            builder.setConnectionManagerShared(true);
-            return builder.build();
-        } catch (final Exception ex) {
-            logger.error(String.format("couldn't create httpClient!! %s", ex.getMessage()));
-            return null;
-        }
-    }
-
     private String getPathFromUrl(final Message<String> message) {
         final String url = getUrlFromMessageHeader(message);
         // Search by url after application context.
-        return url.replaceFirst(REGEX_PATH, "$5");
+        final String path = url.replaceFirst(REGEX_PATH, "$5");
+        return path.substring(StringUtils.ordinalIndexOf(path, "/", 2));
     }
 
     private String getUrlFromMessageHeader(final Message<String> message) {
@@ -311,18 +203,5 @@ public class WSInvokeService implements MessageProcessor<String, String> {
 
         final Node nodeSource = doc.getDocumentElement();
         return xpathExpression.evaluateAsString(nodeSource);
-    }
-
-    private String getSoapVersionFromMessage(final Message<String> message)
-            throws MessageProcessorException {
-        String messageSoapVersion;
-        if (message.getPayload().contains(DefaultConnectorService.NAMESPACE_SOAP_1_1)) {
-            messageSoapVersion = SoapVersion.V1_1.getName();
-        } else if (message.getPayload().contains(DefaultConnectorService.NAMESPACE_SOAP_1_2)) {
-            messageSoapVersion = SoapVersion.V1_2.getName();
-        } else {
-            throw new MessageProcessorException("No se pudo determinar la versión de SOAP asociada a la petición.");
-        }
-        return messageSoapVersion;
     }
 }

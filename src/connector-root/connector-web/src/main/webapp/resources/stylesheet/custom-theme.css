@@ -1,4 +1,4 @@
-@import "../core/css/font-family-montserrat.css";
+@import url("https://fonts.googleapis.com/css?family=Montserrat:400,600,700");
 
 *:focus {
     box-shadow: none;
@@ -51,10 +51,6 @@ footer {
     margin-top: 20px;
 }
 
-.table {
-    border-collapse: collapse;
-}
-
 .table a {
     margin: 0 3px;
     font-weight: 400;
@@ -71,14 +67,6 @@ footer {
 
 .table td {
     vertical-align: middle !important;
-}
-
-.table-role-op th {
-    padding-left: 15px;
-}
-
-.table-role-op td {
-    padding-top: 15px;
 }
 
 .btn-custom {
@@ -329,9 +317,9 @@ select.form-control {
 }
 
 .rich-panel-header {
-    width: auto;
+    width: 100%;
     padding: 4px 0;
-    margin: 0 15px 20px 15px;
+    margin: 0 0 20px 0;
     background: transparent;
     color: #0064B1;
     text-transform: uppercase;
@@ -425,88 +413,3 @@ select.form-control {
 }
 
 .ellipsis { text-overflow: ellipsis; }
-
-label.control-label {
-    word-wrap: normal;
-    text-align: right;
-}
-
-.border-0 {
-    border-width: 0;
-}
-
-.margin-b-0 {
-    margin-bottom: 0;
-}
-
-.w-100 {
-    width: 100%;
-}
-
-.w-input {
-    width: 1.5em;
-}
-
-.w-input input {
-    width: 14px;
-    height: 14px;
-}
-
-.align-right {
-    width: 84%;
-    float: right;
-}
-
-.d-table {
-    display: table;
-}
-
-.d-table-cell {
-    float: none;
-    display: table-cell;
-    vertical-align: middle;
-}
-
-.d-table-cell input {
-    margin-top: 0px;
-}
-
-.info-container > div, #enable_local_configuration_div > div {
-    margin: 5px 0;
-}
-
-.info-container > div label {
-    margin-bottom: 0;
-}
-
-.ml-9 {
-    margin-left: -9px !important;
-}
-
-.ml-10 {
-    margin-left: -10px;
-}
-
-#form_info_conector label.control-label {
-    padding-top: 0;
-}
-
-#form_info_conector div.form-group.d-table {
-    margin-left: 0;
-    margin-right: 0;
-    padding-left: 0;
-    padding-right: 0;
-}
-
-#form_info_conector div.form-group.d-table div.d-table-cell {
-    padding-left: 0;
-    padding-right: 0;
-}
-
-#enable_local_configuration_div div.form-group.d-table label {
-    padding-right: 5px;
-}
-
-#enable_local_configuration_div div.form-group.d-table div.d-table-cell {
-    padding-left: 10px;
-}

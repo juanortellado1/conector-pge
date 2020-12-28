@@ -1,14 +1,13 @@
 apply plugin: 'java'
 apply plugin: 'war'
-apply plugin: 'org.gretty'
+apply plugin: 'org.akhikhl.gretty'
 apply plugin: 'idea'
 apply plugin: 'jacoco' //code coverage
 
+def environment = System.properties['environment']
 def tomcatHome = System.properties['tomcat.home']
-def tomcatDeployment = tomcatHome + '/webapps'
-
-def wildflyHome = System.properties['wildfly.home']
-def wildflyDeployment = wildflyHome + '/standalone/deployments'
+def tomcatBin = tomcatHome + "/bin"
+def tomcatDeployment = tomcatHome + '/webapps/'
 
 def junitVersion = "4.12"
 def jstlVersion = "1.2"
@@ -49,45 +48,27 @@ dependencies {
 }
 
 war {
-    archiveFileName = 'connector-web.war'
+    archiveName = 'connector-web.war'
 }
 
-
-def filesToCopy = copySpec {
-    from "$buildDir/libs/${war.archiveFileName.get()}"
+task undeploy(type: Delete) {
+    delete tomcatDeployment + war.archiveName
 }
 
-// usage gradle connector-web:deploy -Denvironment=develop -Dtomcat.home=complete with tomcat location -Dwildfly.home=complete with wildfly location
+// usage gradle connector-web:deploy -Denvironment=develop -Dtomcat.home=C:/temp/conector_empaquetado_web_v2/conector_empaquetado_web/apache-tomcat-8.5.23/webapps
 task deploy(type: Copy) {
-    [wildflyDeployment, tomcatDeployment].each { dest ->
-        print("Copy $filesToCopy to $dest\n")
-        copy {
-            with filesToCopy
-            into dest
-        }
-    }
+    from "$buildDir/libs/" + war.archiveName
+    into tomcatDeployment
 }
-
-// usage gradle connector-web:undeploy -Denvironment=develop -Dtomcat.home=complete with tomcat location -Dwildfly.home=complete with wildfly location
-//task undeploy(type: Delete) {
-//    [wildflyDeployment, tomcatDeployment].each { dest ->
-//        def pathToFile = "$dest/${war.archiveFileName.get()}"
-//        print("Delete $pathToFile\n")
-//        delete pathToFile
-//    }
-//}
-
 
 //Gretty
 buildscript {
     repositories {
-    maven {
-      url = uri("https://plugins.gradle.org/m2/")
+        jcenter()
     }
-  }
 
     dependencies {
-        classpath 'gradle.plugin.org.gretty:gretty:3.0.1'
+        classpath 'org.akhikhl.gretty:gretty:+'
     }
 }
 

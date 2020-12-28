@@ -53,19 +53,18 @@
                                    method="post"
                                    enctype="multipart/form-data" modelAttribute="connector">
                             <input type="text" name="prefixNameConnector" value="${prefixNameConnector}" hidden/>
-                            <input type="text" name="multipleVersion" value="${connector.multipleVersion}" hidden/>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="name" path="name">Nombre *</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="name" path="name">Nombre *</form:label>
+                                <div class="col-sm-10">
                                     <form:input class="form-control" type="text" name="name"
                                                 value="${connector.name}"
                                                 placeholder="Nombre conector" path="name" required="required" maxlength="100"/>
                                 </div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="type" path="type">Tipo<c:if
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="type" path="type">Tipo<c:if
                                         test="${esAlta == true}"> *</c:if></form:label>
-                                <div class="col-sm-10 d-table-cell">
+                                <div class="col-sm-10">
                                     <form:select class="form-control" type="text" name="type" id="type"
                                                  path="type">
                                         <option value="Produccion"
@@ -79,10 +78,10 @@
                                     </form:select>
                                 </div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="description"
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="description"
                                             path="description">Descripci&oacute;n</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                                <div class="col-sm-10">
                                             <textarea class="form-control" rows="5" name="description"
                                                       value=""
                                                       placeholder="Descripci&oacute;n"
@@ -90,9 +89,9 @@
                                                       maxlength="800">${connector.description}</textarea>
                                 </div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="path" path="path">Path *</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="path" path="path">Path *</form:label>
+                                <div class="col-sm-10">
                                     <form:input class="form-control" type="text" name="path" path="path"
                                                 value="${connector.path}"
                                                 placeholder="Path" onkeypress="removeWhitespaces(this)"
@@ -100,116 +99,98 @@
                                                 required="required" maxlength="512"/>
                                 </div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="url" path="url">Url *</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="url" path="url">Url *</form:label>
+                                <div class="col-sm-10">
                                     <form:input class="form-control" type="text" name="url" path="url"
                                                 value="${connector.url}" onkeypress="removeWhitespaces(this)"
                                                 onchange="this.onkeypress()"
                                                 placeholder="URL" required="required" maxlength="512"/>
                                 </div>
                             </div>
-
-                            <c:if test="${connector.multipleVersion == true}">
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="urlV2" path="urlV2">Url Soap 1.2 *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
-                                        <form:input class="form-control" type="text" name="urlV2" path="urlV2"
-                                                    value="${connector.urlV2}" onkeypress="removeWhitespaces(this)"
-                                                    onchange="this.onkeypress()"
-                                                    placeholder="URL V2" required="required" maxlength="512"/>
-                                    </div>
-                                </div>
-                            </c:if>
-
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="wsaTo" path="wsaTo">wsa:To *</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="wsaTo" path="wsaTo">wsa:To *</form:label>
+                                <div class="col-sm-10">
                                     <form:input class="form-control" type="text" name="wsaTo" path="wsaTo"
                                                 value="${connector.wsaTo}" onkeypress="removeWhitespaces(this)"
                                                 onchange="this.onkeypress()"
                                                 placeholder="wsa:To" required="required" maxlength="512"/>
                                 </div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="username"
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="username"
                                             path="username">Username *</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                                <div class="col-sm-10">
                                     <form:input class="form-control" type="text" name="username" path="username"
                                                 value="${connector.username}"
                                                 placeholder="Username" required="required" maxlength="100"/>
                                 </div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="issuer" path="issuer">Organismo *</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="issuer" path="issuer">Organismo *</form:label>
+                                <div class="col-sm-10">
                                     <form:input class="form-control" type="text" name="issuer" path="issuer"
                                                 value="${connector.issuer}"
                                                 placeholder="Organismo" required="required" maxlength="100"/>
                                 </div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <label class="control-label col-sm-2 d-table-cell" for="enter_token_credentials">Ingresar credenciales de
+                            <div class="form-group">
+                                <label class="control-label col-sm-2" for="enter_token_credentials">Ingresar credenciales de
                                     Username
                                     Token</label>
-                                <div class="col-sm-2 d-table-cell w-input">
+                                <div class="col-sm-2">
                                     <form:checkbox class="form-control" name="enableUserCredentials"
                                                    path="enableUserCredentials"
                                                    id="enter_token_credentials"
                                                    onclick="toggleEnableUserCredentials();"/>
                                 </div>
-                                <div class="col-sm-8"></div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <label class="control-label col-sm-2 d-table-cell" for="enableLocalConfiguration">Habilitar Configuraci&oacute;n
+                            <div class="form-group">
+                                <label class="control-label col-sm-2" for="enableLocalConfiguration">Habilitar Configuraci&oacute;n
                                     Local</label>
-                                <div class="col-sm-2 d-table-cell w-input">
+                                <div class="col-sm-2">
                                     <form:checkbox class="form-control" name="enableLocalConfiguration"
                                                    path="enableLocalConfiguration"
                                                    id="enable_local_configuration"
                                                    onclick="toggleEnableConfigurations();"/>
                                 </div>
-                                <div class="col-sm-8"></div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="enableCacheTokens"
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="enableCacheTokens"
                                             path="enableCacheTokens">Habilitar cach&eacute; de Tokens</form:label>
-                                <div class="col-sm-2 d-table-cell w-input">
+                                <div class="col-sm-2">
                                     <form:checkbox class="form-control" name="enableCacheTokens"
                                                    path="enableCacheTokens"
                                                    value="${connector.enableCacheTokens}"/>
                                 </div>
-                                <div class="col-sm-8"></div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="enableSsl"
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="enableSsl"
                                             path="enableSsl">Publicar por HTTPS</form:label>
-                                <div class="col-sm-2 d-table-cell w-input">
+                                <div class="col-sm-2">
                                     <form:checkbox class="form-control" name="enableSsl"
                                                    path="enableSsl"
                                                    value="${connector.enableSsl}"/>
                                 </div>
-                                <div class="col-sm-8"></div>
                             </div>
-                            <div class="form-group col-sm-12 d-table">
-                                <label class="control-label col-sm-2 d-table-cell" for="enableSTSLocal">Usar configuraci&oacute;n
+                            <div class="form-group">
+                                <label class="control-label col-sm-2" for="enableSTSLocal">Usar configuraci&oacute;n
                                     STS
                                     local</label>
-                                <div class="col-sm-2 d-table-cell w-input">
+                                <div class="col-sm-2">
                                     <form:checkbox class="form-control" name="enableSTSLocal"
                                                    path="enableSTSLocal"
                                                    id="enable_sts_local"
                                                    onclick="toggleEnableSTSLocalUrl();"/>
                                 </div>
-                                <div class="col-sm-8"></div>
                             </div>
 
                             <div id="enter_token_credentials_div"
                                  <c:if test="${connector.enableUserCredentials == false}">style="display: none;"</c:if>>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="username_token"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="username_token"
                                                 path="userCredentials.userNameTokenName">Usuario Username Token *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <form:input class="form-control" type="text" id="userNameTokenName"
                                                     name="userCredentials.userNameTokenName"
                                                     path="userCredentials.userNameTokenName"
@@ -217,11 +198,11 @@
                                                     placeholder="Usuario Username Token"/>
                                     </div>
                                 </div>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="password_token"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="password_token"
                                                 path="userCredentials.userNameTokenPassword">Usuario Password
                                         Token *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <form:input class="form-control" type="password" id="userNameTokenPassword"
                                                     name="userCredentials.userNameTokenPassword"
                                                     path="userCredentials.userNameTokenPassword"
@@ -231,12 +212,13 @@
                                 </div>
                             </div>
 
-                            <div id="enable_local_configuration_div" class="ml-10" <c:if test="${connector.enableLocalConfiguration == false}">style="display: none;"</c:if>>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="alias_issuer_keystore"
+                            <div id="enable_local_configuration_div"
+                                 <c:if test="${connector.enableLocalConfiguration == false}">style="display: none;"</c:if>>
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="alias_issuer_keystore"
                                                 path="localConfiguration.aliasKeystore">Alias del Keystore
                                         Organismo *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <form:input class="form-control" type="text" id="aliasKeystore"
                                                     name="localConfiguration.aliasKeystore"
                                                     path="localConfiguration.aliasKeystore"
@@ -244,11 +226,11 @@
                                                     placeholder="Alias del Keystore Organismo" maxlength="100"/>
                                     </div>
                                 </div>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="password_issuer_keystore"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="password_issuer_keystore"
                                                 path="localConfiguration.passwordKeystoreOrg">Password Keystore
                                         Organismo *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <form:input class="form-control" type="password" id="passwordKeystoreOrg"
                                                     name="localConfiguration.passwordKeystoreOrg"
                                                     path="localConfiguration.passwordKeystoreOrg"
@@ -256,11 +238,11 @@
                                                     placeholder="Password Keystore Organismo" autocomplete="off" maxlength="50"/>
                                     </div>
                                 </div>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="password_ssl_keystore"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="password_ssl_keystore"
                                                 path="localConfiguration.passwordKeystoreSsl">Password Keystore
                                         SSL *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <form:input class="form-control" type="password" id="passwordKeystoreSsl"
                                                     name="localConfiguration.passwordKeystoreSsl"
                                                     path="localConfiguration.passwordKeystoreSsl"
@@ -268,11 +250,11 @@
                                                     placeholder="Password Keystore SSL" autocomplete="off" maxlength="50"/>
                                     </div>
                                 </div>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="password_truststore"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="password_truststore"
                                                 path="localConfiguration.passwordKeystore">Password
                                         Truststore *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <form:input class="form-control" type="password" id="passwordKeystore"
                                                     name="localConfiguration.passwordKeystore"
                                                     path="localConfiguration.passwordKeystore"
@@ -280,17 +262,17 @@
                                                     placeholder="Password Truststore" autocomplete="off" maxlength="50"/>
                                     </div>
                                 </div>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="issuer_keystore"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="issuer_keystore"
                                                 path="localConfiguration.dirKeystoreOrg">Keystore Organismo
                                         <c:if test="${esAlta == true}"> *</c:if>
                                     </form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <input type="file" id="keystoreOrgFile" name="keystoreOrgFile"
                                                placeholder="Keystore Organismo File"/>
                                         <input hidden="hidden"
                                                value="${connector.localConfiguration.dirKeystoreOrg}"/>
-                                        <c:if test="${esAlta == false && not empty connector.localConfiguration.dirKeystoreOrg}">
+                                        <c:if test="${esAlta == false}">
                                             <a href="${keystoreOrg}"><img style="height:25px"
                                                                           src="${pageContext.request.contextPath}/resources/images/icon-down-arrow.svg"
                                                                           alt="Descargar Keystore Organismo"
@@ -305,17 +287,17 @@
                                         </c:if>
                                     </div>
                                 </div>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="ssl_keystore"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="ssl_keystore"
                                                 path="localConfiguration.dirKeystoreSsl">Keystore SSL
                                         <c:if test="${esAlta == true}"> *</c:if>
                                     </form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <input type="file" id="keystoreSSLFile" name="keystoreSSLFile"
                                                placeholder="Keystore SSL File"/>
                                         <input hidden="hidden"
                                                value="${connector.localConfiguration.dirKeystoreSsl}"/>
-                                        <c:if test="${esAlta == false && not empty connector.localConfiguration.dirKeystoreSsl}">
+                                        <c:if test="${esAlta == false}">
                                             <a href="${keystoreSsl}"><img style="height:25px"
                                                                           src="${pageContext.request.contextPath}/resources/images/icon-down-arrow.svg"
                                                                           alt="Descargar Keystore SSL"
@@ -329,17 +311,17 @@
                                         </c:if>
                                     </div>
                                 </div>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="ssl_truststore"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="ssl_truststore"
                                                 path="localConfiguration.dirKeystore">Truststore SSL
                                         <c:if test="${esAlta == true}"> *</c:if>
                                     </form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <input type="file" id="keystoreTruststoreFile" name="keystoreTruststoreFile"
                                                placeholder="Keystore Trust File"/>
                                         <input hidden="hidden"
                                                value="${connector.localConfiguration.dirKeystore}"/>
-                                        <c:if test="${esAlta == false && not empty connector.localConfiguration.dirKeystore}">
+                                        <c:if test="${esAlta == false}">
                                             <a href="${truststore}"><img style="height:25px"
                                                                          src="${pageContext.request.contextPath}/resources/images/icon-down-arrow.svg"
                                                                          alt="Descargar Truststore"
@@ -354,11 +336,11 @@
                                     </div>
                                 </div>
                                 <c:if test="${esAlta == false}">
-                                    <div class="form-group col-sm-12 d-table">
-                                        <form:label class="control-label col-sm-2 d-table-cell" for="ssl_truststore"
+                                    <div class="form-group">
+                                        <form:label class="control-label col-sm-2" for="ssl_truststore"
                                                     path="localConfiguration.dirKeystore">WSDL
                                         </form:label>
-                                        <div class="col-sm-10 d-table-cell">
+                                        <div class="col-sm-10">
                                             <a href="${wsdl}"><img height="25px"
                                                                    src="${pageContext.request.contextPath}/resources/images/icon-down-arrow.svg"
                                                                    alt="Descargar WSDL" title="Descargar WSDL"></a>
@@ -369,10 +351,10 @@
 
                             <div id="enable_sts_local_url_div"
                                  <c:if test="${connector.enableSTSLocal == false}">style="display: none;"</c:if>>
-                                <div class="form-group col-sm-12 d-table">
-                                    <form:label class="control-label col-sm-2 d-table-cell" for="sts_local_url"
+                                <div class="form-group">
+                                    <form:label class="control-label col-sm-2" for="sts_local_url"
                                                 path="stsLocalUrl">URL STS Local *</form:label>
-                                    <div class="col-sm-10 d-table-cell">
+                                    <div class="col-sm-10">
                                         <form:input class="form-control" type="text" id="stsLocalUrl"
                                                     name="stsLocalUrl"
                                                     path="stsLocalUrl"
@@ -383,9 +365,9 @@
                                 </div>
                             </div>
 
-                            <div class="form-group col-sm-12 d-table">
-                                <form:label class="control-label col-sm-2 d-table-cell" for="tag" path="tag">TAG</form:label>
-                                <div class="col-sm-10 d-table-cell">
+                            <div class="form-group">
+                                <form:label class="control-label col-sm-2" for="tag" path="tag">TAG</form:label>
+                                <div class="col-sm-10">
                                     <form:input class="form-control" type="text" name="tag" path="tag"
                                                 value="${connector.tag}"
                                                 placeholder="Tag" autocomplete="off" maxlength="100"/>
@@ -394,149 +376,62 @@
 
                             <div class="form-group">
                                 <div class="rich-panel-header">Rol - Operaci&oacute;n</div>
+                                <div>
+                                    <table style="width:70%">
+                                        <tbody>
+                                        <tr>
+                                            <td><img alt="" class="rich-spacer" height="1" width="50px">
+                                            </td>
+                                            <td>
+                                                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                    <colgroup span="3"></colgroup>
+                                                    <thead>
+                                                    <tr>
+                                                        <th>Rol</th>
+                                                        <th>wsa:Action</th>
+                                                        <th>Operaci&oacute;n
+                                                        </th>
+                                                    </tr>
 
-                                <div class="align-right">
-
-                                    <c:if test="${connector.multipleVersion == true}">
-
-                                        <!-- Nav tabs -->
-                                        <ul class="nav nav-tabs" role="tablist" style="margin-left:17px">
-                                            <li role="presentation" class="active"><a href="#one" aria-controls="one" role="tab" data-toggle="tab">Soap 1.1</a></li>
-                                            <li role="presentation"><a href="#two" aria-controls="two" role="tab" data-toggle="tab">Soap 1.2</a></li>
-                                        </ul>
-
-                                        <!-- Tab panes -->
-                                        <div class="tab-content">
-                                            <div role="tabpanel" class="tab-pane active" id="one">
-
-                                    </c:if>
-                                                <table <c:if test="${connector.multipleVersion == true}">class="w-100"</c:if>>
-                                                    <tbody>
+                                                    <c:forEach var="operation" items="${connector.roleOperations}"
+                                                               varStatus="i">
                                                         <tr>
                                                             <td>
-                                                                <table class="table-role-op" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                                                    <colgroup span="3"></colgroup>
-                                                                    <thead>
-                                                                    <tr>
-                                                                        <th>Rol</th>
-                                                                        <th>wsa:Action</th>
-                                                                        <th>Operaci&oacute;n
-                                                                        </th>
-                                                                    </tr>
-
-                                                                    <c:forEach var="operation" items="${connector.roleOperations}"
-                                                                               varStatus="i">
-
-                                                                        <c:if test="${operation.soapVersion == '1.1'}">
-
-                                                                            <input type="text" name="roleOperations[${i.index}].soapVersion" value="${operation.soapVersion}" hidden/>
-
-                                                                            <tr>
-                                                                                <td>
-                                                                                    <div class="col-sm-12">
-                                                                                        <input class="form-control" type="text"
-                                                                                               name="roleOperations[${i.index}].role"
-                                                                                               value="${operation.role}"/>
-                                                                                    </div>
-                                                                                </td>
-                                                                                <td>
-                                                                                    <div class="col-sm-12">
-                                                                                        <input class="form-control" type="text"
-                                                                                               name="roleOperations[${i.index}].wsaAction"
-                                                                                               value="${operation.wsaAction}"/>
-                                                                                    </div>
-                                                                                </td>
-                                                                                <td>
-                                                                                    <div class="col-sm-12">
-                                                                                        <input class="form-control" type="text"
-                                                                                               name="roleOperations[${i.index}].operationFromWSDL"
-                                                                                               value="${operation.operationFromWSDL}" readonly/>
-                                                                                    </div>
-                                                                                </td>
-                                                                                <input type="text"
-                                                                                       name="roleOperations[${i.index}].operationInputName"
-                                                                                       value="${operation.operationInputName}" hidden/>
-                                                                            </tr>
-
-                                                                        </c:if>
-
-                                                                    </c:forEach>
-                                                                    </thead>
-                                                                    <tbody></tbody>
-                                                                </table>
+                                                                <div class="col-sm-10">
+                                                                    <input class="form-control" type="text"
+                                                                           name="roleOperations[${i.index}].role"
+                                                                           value="${operation.role}"/>
+                                                                </div>
                                                             </td>
+                                                            <td>
+                                                                <div class="col-sm-10">
+                                                                    <input class="form-control" type="text"
+                                                                           name="roleOperations[${i.index}].wsaAction"
+                                                                           value="${operation.wsaAction}"/>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div class="col-sm-10">
+                                                                    <input class="form-control" type="text"
+                                                                           name="roleOperations[${i.index}].operationFromWSDL"
+                                                                           value="${operation.operationFromWSDL}" readonly/>
+                                                                </div>
+                                                            </td>
+                                                            <input type="text"
+                                                                   name="roleOperations[${i.index}].operationInputName"
+                                                                   value="${operation.operationInputName}" hidden/>
                                                         </tr>
-                                                    </tbody>
+                                                    </c:forEach>
+                                                    </thead>
+                                                    <tbody></tbody>
                                                 </table>
-
-                                    <c:if test="${connector.multipleVersion == true}">
-                                            </div>
-                                            <div role="tabpanel" class="tab-pane" id="two">
-                                                <table class="w-100">
-                                                    <tbody>
-                                                    <tr>
-                                                        <td>
-                                                            <table class="table-role-op" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                                                <colgroup span="3"></colgroup>
-                                                                <thead>
-                                                                <tr>
-                                                                    <th>Rol</th>
-                                                                    <th>wsa:Action</th>
-                                                                    <th>Operaci&oacute;n
-                                                                    </th>
-                                                                </tr>
-
-                                                                <c:forEach var="operation" items="${connector.roleOperations}"
-                                                                           varStatus="i">
-
-                                                                    <c:if test="${operation.soapVersion == '1.2'}">
-
-                                                                        <input type="text" name="roleOperations[${i.index}].soapVersion" value="${operation.soapVersion}" hidden/>
-
-                                                                        <tr>
-                                                                            <td>
-                                                                                <div class="col-sm-12">
-                                                                                    <input class="form-control" type="text"
-                                                                                           name="roleOperations[${i.index}].role"
-                                                                                           value="${operation.role}"/>
-                                                                                </div>
-                                                                            </td>
-                                                                            <td>
-                                                                                <div class="col-sm-12">
-                                                                                    <input class="form-control" type="text"
-                                                                                           name="roleOperations[${i.index}].wsaAction"
-                                                                                           value="${operation.wsaAction}"/>
-                                                                                </div>
-                                                                            </td>
-                                                                            <td>
-                                                                                <div class="col-sm-12">
-                                                                                    <input class="form-control" type="text"
-                                                                                           name="roleOperations[${i.index}].operationFromWSDL"
-                                                                                           value="${operation.operationFromWSDL}" readonly/>
-                                                                                </div>
-                                                                            </td>
-                                                                            <input type="text"
-                                                                                   name="roleOperations[${i.index}].operationInputName"
-                                                                                   value="${operation.operationInputName}" hidden/>
-                                                                        </tr>
-
-                                                                    </c:if>
-
-                                                                </c:forEach>
-                                                                </thead>
-                                                                <tbody></tbody>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </c:if>
-
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </div>
 
+                            </div>
 
                             <c:forEach var="keystoreModalData" items="${keystoreModalDataColl}">
                                 <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog"
@@ -598,8 +493,8 @@
                                             var="testToProdUrl"/>
                             </c:otherwise>
                         </c:choose>
-                        <div class="form-group align-right" style="padding-top: 10px;">
-                            <div class="col-sm-3" style="padding-left: 8px;">
+                        <div class="form-group" style="padding-top: 10px;">
+                            <div class="col-sm-3">
                                 <form:form action="${cancelUrl}"
                                            method="post"
                                            enctype="multipart/form-data">
@@ -620,12 +515,12 @@
                                 </c:choose>
                             </div>
                             <c:if test="${esAlta == false}">
-                                <div class="col-sm-2">
+                                <div class="col-sm-3">
                                     <input type="submit" value="Borrar" class="btn-input" data-toggle="modal"
                                            data-target="#delete_confirmation_${connector.id}">
                                 </div>
                                 <c:if test="${connector.type == 'Testing'}">
-                                    <div class="col-sm-4" style="padding-right: 0; text-align: right;">
+                                    <div class="col-sm-3">
                                         <form:form action="${testToProdUrl}"
                                                    method="get"
                                                    enctype="multipart/form-data">
@@ -660,7 +555,9 @@
     </div>
 </section>
 
-<%@include file="footer.jsp" %>
+<footer>
+    <p>Powered by Pyxis PGE V. 3.0</p>
+</footer>
 
 <script type="text/javascript">
     $(document).ready(function () {

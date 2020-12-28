@@ -1,22 +1,12 @@
 package gub.agesic.connector.services.wsdlparser;
 
-import gub.agesic.connector.dataaccess.entity.Connector;
-import gub.agesic.connector.dataaccess.entity.RoleOperation;
-import gub.agesic.connector.enums.SoapVersion;
-import gub.agesic.connector.exceptions.ConnectorException;
-import gub.agesic.connector.pojo.SoapVersionInfo;
-import gub.agesic.connector.services.filemanager.FileManagerService;
-import gub.agesic.connector.services.xpathparser.XPathParserService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.Comment;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -25,13 +15,22 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.ui.Model;
+import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Comment;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import gub.agesic.connector.dataaccess.entity.Connector;
+import gub.agesic.connector.dataaccess.entity.RoleOperation;
+import gub.agesic.connector.exceptions.ConnectorException;
+import gub.agesic.connector.services.filemanager.FileManagerService;
+import gub.agesic.connector.services.xpathparser.XPathParserService;
 
 @Service
 public class DefaultWSDLParserService implements WSDLParserService {
@@ -48,46 +47,31 @@ public class DefaultWSDLParserService implements WSDLParserService {
 
     @Autowired
     public DefaultWSDLParserService(final FileManagerService fileManagerService,
-                                    final XPathParserService xPathParserService) {
+            final XPathParserService xPathParserService) {
         this.fileManagerService = fileManagerService;
         this.xPathParserService = xPathParserService;
     }
 
     @Override
     public Connector getWSDLData(final Model model, final String prefixNameConnector,
-                                 final Connector connector) throws ConnectorException {
+            final Connector connector) throws ConnectorException {
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         final Path filePath = fileManagerService.getConnectorWSDL(0, prefixNameConnector);
         final Node wsdl = xPathParserService.getFileDocumentElement(factory, filePath);
 
-        final SoapVersionInfo soapVersion = xPathParserService.soapVersionInfo(wsdl);
-        final boolean isMultipleSoapVersion = soapVersion.getVersion().equals(SoapVersion.MULTIPLE);
-        connector.setMultipleVersion(isMultipleSoapVersion);
-
         final List<Node> operationsNodeList = xPathParserService
                 .getXPathResultNodeList(OPERATION_NAME, wsdl);
-        final List<RoleOperation> roleOperationsList = getRoleOperationsList(operationsNodeList, soapVersion.getPrefix());
+        final List<RoleOperation> roleOperationsList = getRoleOperationsList(operationsNodeList);
         if (!roleOperationsList.isEmpty()) {
             connector.setRoleOperations(roleOperationsList);
         }
 
-        Node soapAddressNode = xPathParserService.getXPathResultNode(SERVICE_PORT, wsdl, 1);
-        String url = getURL(soapAddressNode);
-        connector.setUrl(url == null ? "" : url);
-
-        if (isMultipleSoapVersion) {
-            connector.setUrlV2("");
-            final List<Node> soapAddressNodeList = xPathParserService.getXPathResultNodeList(SERVICE_PORT, wsdl);
-            for (Node node : soapAddressNodeList) {
-                soapAddressNode = node.getChildNodes().item(1);
-                if (nodePrefix(soapAddressNode.getNodeName()).equals(soapVersion.getPrefix())) {
-                    url = getURL(soapAddressNode);
-                    if (url != null) {
-                        connector.setUrlV2(url);
-                    }
-                    break;
-                }
-            }
+        final Node soapAddressNode = xPathParserService.getXPathResultNode(SERVICE_PORT, wsdl, 1);
+        final String url = getURL(soapAddressNode);
+        if (url == null) {
+            connector.setUrl("");
+        } else {
+            connector.setUrl(url);
         }
 
         final List<Path> xsdImportsPathList = new ArrayList<Path>();
@@ -102,7 +86,7 @@ public class DefaultWSDLParserService implements WSDLParserService {
     }
 
     private void getXSDSImports(final DocumentBuilderFactory factory, final Path filePath,
-                                final String prefixNameConnector, final List<Path> result) throws ConnectorException {
+            final String prefixNameConnector, final List<Path> result) throws ConnectorException {
         final Node nodeSource = xPathParserService.getFileDocumentElement(factory, filePath);
 
         final List<Node> auxXSDImportsList = xPathParserService.getXPathResultNodeList(XSD_IMPORTS,
@@ -115,88 +99,83 @@ public class DefaultWSDLParserService implements WSDLParserService {
         schemas.addAll(auxXSDImportsList);
 
         for (final Node schema : schemas) {
-            final String schemaLocation = xPathParserService.getNamedItemValue(schema, "schemaLocation");
-
-            if (StringUtils.isEmpty(schemaLocation)) {
-                continue;
+            final String schemaLocation = xPathParserService.getNamedItemValue(schema,
+                    "schemaLocation");
+            final Path xsdPath = fileManagerService
+                    .getFilePathInUploadTempFolder(prefixNameConnector + schemaLocation);
+            if (hasXSDExtension(xsdPath.toString())) {
+                if (!result.contains(xsdPath)) {
+                    result.add(xsdPath);
+                    getXSDSImports(factory, xsdPath, prefixNameConnector, result);
+                }
+            } else {
+                throw new ConnectorException("Un xsd importado no tiene terminación .xsd");
             }
 
-            final Path xsdPath = fileManagerService.getFilePathInUploadTempFolder(prefixNameConnector + schemaLocation);
-            if (!result.contains(xsdPath)) {
-                result.add(xsdPath);
-                getXSDSImports(factory, xsdPath, prefixNameConnector, result);
-            }
         }
     }
 
-//    private boolean hasXSDExtension(final String filePath) throws ConnectorException {
-//        return XSD_EXTENSION.equals(fileManagerService.getFileExtension(filePath));
-//    }
+    private boolean hasXSDExtension(final String filePath) throws ConnectorException {
+        return XSD_EXTENSION.equals(fileManagerService.getFileExtension(filePath));
+    }
 
     private boolean checkXSDSExistence(final List<Path> xsdImportsPathList) {
+        boolean exists = true;
         for (final Path xsdImportPath : xsdImportsPathList) {
-            if (!fileManagerService.existsFile(xsdImportPath)) return false;
+            exists = fileManagerService.existsFile(xsdImportPath);
+            if (!exists) {
+                return exists;
+            }
         }
-        return true;
+        return exists;
     }
 
-    private List<RoleOperation> getRoleOperationsList(final List<Node> operationsList, final String prefix) throws ConnectorException {
+    private List<RoleOperation> getRoleOperationsList(final List<Node> operationsList) {
         final List<RoleOperation> roleOperations = new ArrayList<>();
         for (final Node operation : operationsList) {
             final String operationName = xPathParserService.getNamedItemValue(operation, "name");
             String wsaAction = "";
             String operationInputName = "";
-            String soapVersion = SoapVersion.V1_1.getName();
 
-            if (isDocumentLiteralOperation(operation)) operationInputName = getDocumentLiteralOperation(operation);
+            if (isDocumentLiteralOperation(operation)) {
+                operationInputName = getDocumentLiteralOperation(operation);
+            }
 
             final NodeList childNodes = operation.getChildNodes();
             for (int j = 0; j < childNodes.getLength(); j++) {
                 final Node childNode = childNodes.item(j);
-                final String nodeName = childNode.getNodeName();
-
-                if (!prefix.equals(SoapVersion.UNDEFINED.getName()) && prefix.equals(nodePrefix(nodeName)))
-                    soapVersion = SoapVersion.V1_2.getName();
-
-                if (nodeName.contains("operation")) {
+                if (childNode.getNodeName().contains("operation")) {
                     wsaAction = xPathParserService.getNamedItemValue(childNode, "soapAction");
-                } else if (operationInputName.isEmpty() && nodeName.contains("input")) {
+                } else if (childNode.getNodeName().contains("input")) {
                     operationInputName = xPathParserService.getNamedItemValue(childNode, "name");
                 }
             }
 
-            if (operationInputName.isEmpty() && operationName.isEmpty()) {
-                final String errorMessage = "No se pudo determinar correctamente el nombre de las operaciones.";
-                LOGGER.error(errorMessage);
-                throw new ConnectorException(errorMessage);
-            }
-
-            roleOperations.add(new RoleOperation("", operationInputName, operationName, wsaAction, soapVersion));
+            roleOperations.add(new RoleOperation("", operationInputName, operationName, wsaAction));
         }
         return roleOperations;
     }
 
     private String getDocumentLiteralOperation(final Node operation) {
-        final String operationName = xPathParserService.getNamedItemValue(operation, "name");
         final Node wsdlDefinition = operation.getParentNode().getParentNode();
-
-        String filterExpression = "//portType/operation[@name='" + operationName + "']/input[@message]";
-        final List<Node> messageList = xPathParserService.getXPathResultNodeList(filterExpression, wsdlDefinition);
-        if (messageList.isEmpty()) return "";
-        final String messageCompleteName = messageList.get(0).getAttributes().getNamedItem("message").getTextContent();
-
-        final String separator = ":";
+        final Node message = xPathParserService
+                .getXPathResultNodeList("//portType/operation/input[@message]", wsdlDefinition)
+                .get(0);
+        final String messageCompleteName = message.getAttributes().getNamedItem("message")
+                .getTextContent();
         String messageName = messageCompleteName;
-        if (messageCompleteName.contains(separator))
-            messageName = messageCompleteName.substring(messageCompleteName.indexOf(separator) + 1);
-
-        filterExpression = "//message[@name='" + messageName + "']/part";
-        final List<Node> partList = xPathParserService.getXPathResultNodeList(filterExpression, wsdlDefinition);
-        if (partList.isEmpty()) return "";
-        final String elementCompleteName = partList.get(0).getAttributes().getNamedItem("element").getNodeValue();
-
-        if (elementCompleteName.contains(separator))
-            return elementCompleteName.substring(elementCompleteName.indexOf(separator) + 1);
+        if (messageCompleteName.contains(":")) {
+            messageName = messageCompleteName.substring(messageCompleteName.indexOf(":") + 1,
+                    messageCompleteName.length());
+        }
+        final Node part = xPathParserService.getXPathResultNodeList(
+                "//message[@name='" + messageName + "']/part", wsdlDefinition).get(0);
+        final String elementCompleteName = part.getAttributes().getNamedItem("element")
+                .getNodeValue();
+        if (elementCompleteName.contains(":")) {
+            return elementCompleteName.substring(elementCompleteName.indexOf(":") + 1,
+                    elementCompleteName.length());
+        }
         return elementCompleteName;
     }
 
@@ -204,8 +183,7 @@ public class DefaultWSDLParserService implements WSDLParserService {
         final Node wsdlDefinition = operation.getParentNode().getParentNode();
         final Node binding = xPathParserService
                 .getXPathResultNodeList("//binding/binding", wsdlDefinition).get(0);
-        final String style = xPathParserService.getNamedItemValue(binding, "style");
-        final String bindingStyle = style.isEmpty() ? "document" : style;
+        final String bindingStyle = xPathParserService.getNamedItemValue(binding, "style");
         final Node operationBody = xPathParserService
                 .getXPathResultNodeList("//binding/operation/input/body", wsdlDefinition).get(0);
         final String useStyle = xPathParserService.getNamedItemValue(operationBody, "use");
@@ -222,44 +200,13 @@ public class DefaultWSDLParserService implements WSDLParserService {
 
     @Override
     public void modifyLocationAndSave(final MultipartFile file, final String location,
-                                      final Path filePath, String connectorPath) throws ConnectorException {
+            final Path filePath) throws ConnectorException {
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         final Node nodeSource = xPathParserService.getFileDocumentElement(factory, file);
 
-        // Cambio el soap:address location del wsdl
-        final List<Node> soapAddressNodeList = xPathParserService.getXPathResultNodeList(SERVICE_PORT, nodeSource);
-        for (Node node : soapAddressNodeList) {
-            final Node soapAddressNode = node.getChildNodes().item(1);
-            soapAddressNode.getAttributes().getNamedItem("location").setNodeValue(location);
-        }
-
-        // Cambio la ruta a los ficheros que se importan o incluyen (xsd,xml)
-        String separator = "/";
-        int pathSeparator = connectorPath.lastIndexOf(separator);
-        connectorPath = connectorPath.substring(pathSeparator + 1);
-        final String schemaLocationKey = "schemaLocation";
-
-        final List<Node> importsList = xPathParserService.getXPathResultNodeList(XSD_IMPORTS, nodeSource);
-        final List<Node> includeList = xPathParserService.getXPathResultNodeList(XSD_INCLUDE, nodeSource);
-
-        final List<Node> schemas = new ArrayList<Node>();
-        schemas.addAll(importsList);
-        schemas.addAll(includeList);
-
-        for (final Node schema : schemas) {
-            String schemaLocation = xPathParserService.getNamedItemValue(schema, schemaLocationKey);
-            String schemaLocationPath = "";
-            String schemaLocationName = schemaLocation;
-
-            pathSeparator = schemaLocation.lastIndexOf(separator);
-            if (pathSeparator > 0) {
-                schemaLocationPath = schemaLocation.substring(0, pathSeparator);
-                schemaLocationName = schemaLocation.substring(pathSeparator + 1);
-            }
-            if (!schemaLocation.isEmpty() && !schemaLocationPath.equals(connectorPath)) {
-                schema.getAttributes().getNamedItem(schemaLocationKey).setNodeValue(connectorPath + separator + schemaLocationName);
-            }
-        }
+        final Node soapAddressNode = xPathParserService.getXPathResultNode(SERVICE_PORT, nodeSource,
+                1);
+        soapAddressNode.getAttributes().getNamedItem("location").setNodeValue(location);
 
         final TransformerFactory transformerFactory = TransformerFactory.newInstance();
         final Transformer transformer;
@@ -270,7 +217,7 @@ public class DefaultWSDLParserService implements WSDLParserService {
             final StreamResult result = new StreamResult(new File(filePath.toString()));
             transformer.transform(source, result);
         } catch (final TransformerException exception) {
-            final String message = "Error al modificar el wsdl";
+            final String message = "Error al modificar el wsdl con la url del conector";
             LOGGER.error(message, exception);
             throw new ConnectorException(message, exception);
         }
@@ -316,10 +263,6 @@ public class DefaultWSDLParserService implements WSDLParserService {
             throw new ConnectorException("Error al pasar a texto un xml", exception);
         }
 
-    }
-
-    private String nodePrefix(String nodeName) {
-        return nodeName.contains(":") ? nodeName.substring(0, nodeName.indexOf(":")) : "";
     }
 
 }

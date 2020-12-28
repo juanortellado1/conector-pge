@@ -23,9 +23,9 @@ public interface ConnectorRepository extends JpaRepository<Connector, Long> {
     Optional<Boolean> existsConnectorByNameAndType(@Param("name") String name,
             @Param("type") String type);
 
-    @Query("select ro from Connector c inner join c.roleOperations ro where c =:connector and (ro.operationFromWSDL = :operation or ro.operationInputName = :operation) and ro.soapVersion = :soapVersion")
-    List<RoleOperation> getRoleoperationsOperationFromWSDL(
-            @Param("connector") Connector connector, @Param("operation") String operation, @Param("soapVersion") String soapVersion);
+    @Query("select ro from Connector c inner join c.roleOperations ro where c =:connector and (ro.operationFromWSDL = :operation or ro.operationInputName = :operation)")
+    Optional<RoleOperation> getRoleoperationsOperationFromWSDL(
+            @Param("connector") Connector connector, @Param("operation") String operation);
 
     @Query("select c from Connector c where c.type =:type")
     List<Connector> getFilteredConnectorsByType(@Param("type") String type);

@@ -26,14 +26,9 @@
     <link href="${smart_wizard_theme_circles}" rel="stylesheet"/>
     <link href="${smart_wizard_theme_arrows}" rel="stylesheet"/>
     <link href="${smart_wizard_theme_dots}" rel="stylesheet"/>
-    <!-- MDBootstrap Datatables  -->
-    <spring:url value="/resources/core/css/datatables.min.css" var="datatablesCss"/>
-    <spring:url value="/resources/core/css/fontawesome.all.css" var="fontawesomeCss"/>
-    <link href="${datatablesCss}" rel="stylesheet"/>
-    <link href="${fontawesomeCss}" rel="stylesheet"/>
 
     <!-- JS -->
-    <spring:url value="/resources/core/js/jquery-3.2.1.min.js" var="jQueryMinJs"/>
+    <spring:url value="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js" var="jQueryMinJs"/>
     <spring:url value="/resources/core/js/bootstrap.min.js" var="bootstrapJs"/>
     <spring:url value="/resources/core/js/connector.js" var="connectorJs"/>
     <spring:url value="/resources/core/js/smartWizard.js" var="smartwizardJs"/>
@@ -44,9 +39,7 @@
     <!-- SmartWizard -->
     <spring:url value="/resources/core/js/jquery.smartWizard.js" var="jquerySmartWizard"/>
     <script src="${jquerySmartWizard}"></script>
-    <!-- MDBootstrap Datatables  -->
-    <spring:url value="/resources/core/js/datatables.min.js" var="datatablesJs"/>
-    <script src="${datatablesJs}"></script>
+
 
 </head>
 <body>

@@ -60,20 +60,14 @@
 <%@include file="help.jsp" %>
 
 
-<div id="info" class="alert alert-${css} alert-dismissible" role="alert" <c:if test="${empty msg}">style="display: none;"</c:if>>
-    <button type="button" class="close" data-hide="alert" onclick="hideAlert();"
-            aria-label="Close">
-        <span aria-hidden="true">x</span>
-    </button>
-    <c:forEach items="${msg}" var="m" >
-        <strong>${m}</strong></br>
-    </c:forEach>
-</div>
-
-<script>
-    function hideAlert() {
-        $('#info').css('display', 'none');
-        $('#info strong').remove();
-        $('#info br').remove();
-    }
-</script>
+<c:if test="${not empty msg}">
+    <div class="alert alert-${css} alert-dismissible" role="alert">
+        <button type="button" class="close" data-dismiss="alert"
+                aria-label="Close">
+            <span aria-hidden="true">x</span>
+        </button>
+        <c:forEach items="${msg}" var="m" >
+            <strong>${m}</strong></br>
+        </c:forEach>
+    </div>
+</c:if>

@@ -46,9 +46,9 @@
                             <form enctype="multipart/form-data"
                                   action="${formAction}"
                                   id="formuploadajax" method="post">
-                                <div class="col-sm-offset-1 col-sm-2" style="top: 10px">
+                                <div class="col-sm-offset-1 col-sm-2">
                                     <input id="uploaded_file" type="file" name="uploaded_file"
-                                           onchange="checkFileSize(this);" required/>
+                                           onchange="ValidateSingleInput(this);" required/>
                                 </div>
                                 <div class="col-sm-offset-5 col-sm-2">
                                     <input type="submit" class="btn-input" value="Subir archivos"
@@ -84,8 +84,9 @@
     </div>
 </section>
 
-<%@include file="footer.jsp" %>
-
+<footer>
+    <p>Powered by Pyxis PGE V. 3.0</p>
+</footer>
 <script type="text/javascript">
     $(document).ready(function () {
         initializeSmartWizard();
@@ -98,6 +99,5 @@
         document.getElementById('uploaded_file').required = false;
     }
 </script>
-
 </body>
 </html>

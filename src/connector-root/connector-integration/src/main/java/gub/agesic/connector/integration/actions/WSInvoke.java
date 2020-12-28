@@ -21,8 +21,8 @@ import org.springframework.stereotype.Service;
 import org.w3c.dom.Element;
 
 import gub.agesic.connector.dataaccess.entity.Connector;
-import uy.gub.agesic.pge.beans.SAMLAssertion;
-import uy.gub.agesic.pge.opensaml.OpenSamlBootstrap;
+import gub.agesic.connector.integration.pgeclient.beans.SAMLAssertion;
+import gub.agesic.connector.integration.pgeclient.opensaml.OpenSamlBootstrap;
 
 @Service
 public class WSInvoke {
@@ -35,7 +35,7 @@ public class WSInvoke {
     }
 
     public String processToken(final SAMLAssertion token, final Message message,
-                               final Connector connector) throws IOException, SOAPException {
+            final Connector connector) throws IOException, SOAPException {
         final String body = (String) message.getPayload();
         final InputStream is = new ByteArrayInputStream(body.getBytes());
         final SOAPMessage request = MessageFactory.newInstance().createMessage(null, is);

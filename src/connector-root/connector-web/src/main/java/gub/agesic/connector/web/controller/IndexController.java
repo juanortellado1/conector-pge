@@ -7,11 +7,9 @@ import static gub.agesic.connector.web.controller.ConnectorController.MSG;
 import java.util.ArrayList;
 import java.util.List;
 
-import gub.agesic.connector.web.servlet3.MyWebInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,13 +24,11 @@ import gub.agesic.connector.dataaccess.entity.Connector;
 import gub.agesic.connector.exceptions.ConnectorException;
 import gub.agesic.connector.services.dbaccess.ConnectorService;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * Created by abrusco on 13/12/17.
  */
 @Controller
-@SessionAttributes(value = {"type", "tag"})
+@SessionAttributes(value = { "type", "tag" })
 public class IndexController {
 
     public static final Integer CONNECTORS_PER_PAGE = 10;
@@ -74,75 +70,79 @@ public class IndexController {
 
     @GetMapping("/connectors")
     public ModelAndView showFirstConnectors(final Model model,
-                                            final RedirectAttributes redirectAttributes,
-                                            final HttpServletRequest request) {
-
+            final RedirectAttributes redirectAttributes) {
         String type = PRODUCCION;
+        String tag = "";
         if (model.asMap().containsKey(TYPE_CONNECTOR)) {
             type = model.asMap().get(TYPE_CONNECTOR).toString();
         }
-        return showFilteredConnectors(model, type, redirectAttributes, request);
+        if (model.asMap().containsKey(TAG_CONNECTOR)) {
+            tag = model.asMap().get(TAG_CONNECTOR).toString();
+        }
+        return showFilteredConnectors(model, type, tag, redirectAttributes);
     }
 
     @GetMapping("/connectors/{pageId}")
     public ModelAndView showConnectorsByPage(final Model model,
-                                             @PathVariable("pageId") final int pageId, final RedirectAttributes redirectAttributes, HttpServletRequest request) {
+            @PathVariable("pageId") final int pageId, final RedirectAttributes redirectAttributes) {
         final List<Connector> connectorList = connectorService.getConnectorList();
-
-        return showConnectors(model, pageId, connectorList, redirectAttributes, request);
+        return showConnectors(model, pageId, connectorList, redirectAttributes);
     }
 
     public ModelAndView showConnectors(final Model model, final int pageId,
-                                       final List<Connector> connectorList, final RedirectAttributes redirectAttributes, HttpServletRequest request) {
-        final String urlBase = request.getScheme() + "://" + request.getServerName();
+            final List<Connector> connectorList, final RedirectAttributes redirectAttributes) {
+
+        final int firstConnector = (pageId - 1) * CONNECTORS_PER_PAGE;
+        int lastConnector = pageId * CONNECTORS_PER_PAGE;
+        if (connectorList.size() < lastConnector) {
+            lastConnector = connectorList.size();
+        }
+        final double connectorPerPage = CONNECTORS_PER_PAGE;
+        int totalPages = (int) Math.ceil(connectorList.size() / connectorPerPage);
+        if (totalPages == 0) {
+            totalPages = 1;
+        }
+
+        if (pageId <= 0 || pageId > totalPages) {
+            redirectAttributes.addFlashAttribute(CSS, DANGER);
+            redirectAttributes.addFlashAttribute(MSG, "ERROR: No existe la p�gina " + pageId);
+            return new ModelAndView(REDIRECT_TO_CONNECTORS);
+        }
         final List<Connector> resultConnectorList = new ArrayList<>();
-
-        for (final Connector connector : connectorList) {
-            final String port = connectorService.getPortByConnector(connector);
-            final String wsdlURL = urlBase + ":" + port + connector.getPath() + "?wsdl";
-            connector.setWsdlUrlForUI(wsdlURL);
-            resultConnectorList.add(connector);
+        for (int i = firstConnector; i < lastConnector; i++) {
+            resultConnectorList.add(connectorList.get(i));
         }
-
-        int maxUploadSize = MyWebInitializer.DEFAULT_MAX_UPLOAD_SIZE * 1024 * 1024;
-        try {
-            maxUploadSize = connectorService.getMaxUploadSize();
-        } catch (ConnectorException e) {
-            LOGGER.info(e.getMessage() + "Se utiliza el valor por defecto: "+MyWebInitializer.DEFAULT_MAX_UPLOAD_SIZE);
-        }
-
-        model.addAttribute("max_upload_size", maxUploadSize);
         model.addAttribute("connectors", resultConnectorList);
-
+        model.addAttribute("actual_page", pageId);
+        model.addAttribute("total_pages", totalPages);
         return new ModelAndView("index");
     }
 
     @GetMapping("/connectors/filtered")
     public ModelAndView showFilteredConnectors(final Model model,
-                                               @RequestParam(value = "type", required = false) final String type,
-                                               final RedirectAttributes redirectAttributes,
-                                               final HttpServletRequest request) {
+            @RequestParam(value = "type", required = false) final String type,
+            @RequestParam(value = "tag", required = false) final String tag,
+            final RedirectAttributes redirectAttributes) {
 
-        return showFilteredConnectorsByPage(model, 1, type, redirectAttributes, request);
+        return showFilteredConnectorsByPage(model, 1, type, tag, redirectAttributes);
     }
 
     @GetMapping("/connectors/filtered/{pageId}")
     public ModelAndView showFilteredConnectorsByPage(final Model model,
-                                                     @PathVariable("pageId") final int pageId,
-                                                     @RequestParam(value = "type", required = false) final String type,
-                                                     final RedirectAttributes redirectAttributes,
-                                                     final HttpServletRequest request) {
+            @PathVariable("pageId") final int pageId,
+            @RequestParam(value = "type", required = false) final String type,
+            @RequestParam(value = "tag", required = false) final String tag,
+            final RedirectAttributes redirectAttributes) {
 
-        String tag = "";
         if (type == null) {
-            return showFirstConnectors(model, redirectAttributes, request);
+            return showFirstConnectors(model, redirectAttributes);
         } else {
             final List<Connector> connectorList = connectorService.getFilteredConnectorList(type,
                     tag);
             model.addAttribute("filtered", true);
             model.addAttribute(TYPE_CONNECTOR, type);
             model.addAttribute(TAG_CONNECTOR, tag);
-            return showConnectors(model, pageId, connectorList, redirectAttributes, request);
+            return showConnectors(model, pageId, connectorList, redirectAttributes);
         }
     }
 }

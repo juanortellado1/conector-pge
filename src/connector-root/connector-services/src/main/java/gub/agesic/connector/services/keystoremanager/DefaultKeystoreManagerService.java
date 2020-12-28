@@ -175,8 +175,9 @@ public class DefaultKeystoreManagerService implements KeystoreManagerService {
     public Path getConnectorKeystore(final long id, final String keystoreName)
             throws ConnectorException {
         final Connector connector = connectorService.getConnector(id);
+        final boolean enableLocalConfiguration = connector.isEnableLocalConfiguration();
         final ConnectorLocalConfiguration localConfiguration = connector.getLocalConfiguration();
-        if (localConfiguration != null) {
+        if (enableLocalConfiguration && localConfiguration != null) {
             return getKeystorePath(keystoreName, localConfiguration);
         }
         final String errorMessage = "ERROR: No se encontró el Keystore deseado para el conector: "

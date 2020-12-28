@@ -66,7 +66,7 @@
                                          name="type"
                                          path="type"
                                          value="${type}"/>
-                            <div id="enable_local_configuration_div" class="ml-10">
+                            <div id="enable_local_configuration_div">
                                 <div class="form-group">
                                     <form:label class="control-label col-sm-2" for="alias_issuer_keystore"
                                                 path="aliasKeystore">Alias del Keystore
@@ -230,7 +230,9 @@
     </div>
 </section>
 
-<%@include file="footer.jsp" %>
+<footer>
+    <p>Powered by Pyxis PGE V. 3.0</p>
+</footer>
 
 </body>
 </html>

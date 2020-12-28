@@ -17,7 +17,7 @@ public interface WSDLParserService {
     Connector getWSDLData(Model model, String prefixNameConnector, Connector connector)
             throws ConnectorException;
 
-    void modifyLocationAndSave(final MultipartFile file, final String location, final Path filePath, String connectorPath)
+    void modifyLocationAndSave(final MultipartFile file, final String location, final Path filePath)
             throws ConnectorException;
 
     void commentXSDImportTags(Path wsdlPath) throws ConnectorException;

@@ -54,7 +54,7 @@ public interface FileManagerService {
 
     String uploadFileWithPrefix(MultipartFile file) throws ConnectorException;
 
-    Path getConnectorFile(long id, String fileName) throws ConnectorException;
+    Path getConnectorXSD(long id, String xsdFileName) throws ConnectorException;
 
     MultipartFile getConnectorWSDLNewFile(long id, String prefixNameConnector)
             throws ConnectorException;

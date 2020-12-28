@@ -26,8 +26,6 @@ import gub.agesic.connector.exceptions.ConnectorException;
 @Service
 public class DefaultConnectorService implements ConnectorService {
 
-    public static final String NAMESPACE_SOAP_1_1 = "http://schemas.xmlsoap.org/soap/envelope/";
-    public static final String NAMESPACE_SOAP_1_2 = "http://www.w3.org/2003/05/soap-envelope";
     public static final String PROTOCOL_HTTP = "http";
     public static final String PROTOCOL_HTTPS = "https";
     public static final String ERROR_ALIAS_DEL_KEYSTORE_ORGANISMO_NO_PUEDE_SER_VACIO = "Error: Alias del Keystore Organismo no puede ser vacío.";
@@ -103,9 +101,10 @@ public class DefaultConnectorService implements ConnectorService {
 
     @Override
     public List<Connector> getFilteredConnectorList(final String type, final String tag) {
-        if (tag == null || tag.isEmpty()) {
+        if (tag.isEmpty()) {
             return connectorRepository.getFilteredConnectorsByType(type);
         } else {
+
             return connectorRepository.getFilteredConnectorsByTypeAndTag(type, tag);
         }
     }
@@ -167,25 +166,14 @@ public class DefaultConnectorService implements ConnectorService {
     }
 
     @Override
-    public void updateConnectorPath(Connector connector) {
-        //Adicionar '/' al inicio en caso de que se alla omitido
-        String connectorPath = connector.getPath();
-        String slash = "/";
-        if (!slash.equals(connectorPath.substring(0, 1))) {
-            connectorPath = slash.concat(connectorPath);
-            connector.setPath(connectorPath);
-        }
-    }
-
-    @Override
     public void deleteConnector(final Long id) {
         connectorRepository.delete(id);
     }
 
     @Override
-    public List<RoleOperation> getRoleoperationsOperationFromWSDL(final Connector connector,
-            final String operation, final String soapVersion) {
-        return connectorRepository.getRoleoperationsOperationFromWSDL(connector, operation, soapVersion);
+    public Optional<RoleOperation> getRoleoperationsOperationFromWSDL(final Connector connector,
+            final String operation) {
+        return connectorRepository.getRoleoperationsOperationFromWSDL(connector, operation);
     }
 
     @Override
@@ -210,8 +198,7 @@ public class DefaultConnectorService implements ConnectorService {
 
     }
 
-    @Override
-    public String getPortByConnector(final Connector connector) {
+    private String getPortByConnector(final Connector connector) {
         final String PORT_PROD = environment.getProperty("connector.http.client.port.prod");
         final String PORT_PROD_SSL = environment.getProperty("connector.http.client.port.prod.ssl");
         final String PORT_TEST = environment.getProperty("connector.http.client.port.test");
@@ -247,15 +234,6 @@ public class DefaultConnectorService implements ConnectorService {
         if (connector.isEnableSsl()) {
             protocol = PROTOCOL_HTTPS;
         }
-        return protocol + "://" + ip.getHostAddress() + ":" + port + path;
-    }
-
-    @Override
-    public int getMaxUploadSize() throws ConnectorException{
-        try {
-            return Integer.parseInt(environment.getProperty("connector.max.upload.size")) * 1024 * 1024;
-        } catch (Exception e) {
-            throw new ConnectorException("No se pudo leer la propiedad 'connector.max.upload.size'");
-        }
+        return protocol + "://" + ip.getHostAddress() + ":" + port + "/connector-runtime" + path;
     }
 }

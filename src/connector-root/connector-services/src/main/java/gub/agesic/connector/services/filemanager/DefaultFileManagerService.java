@@ -13,9 +13,12 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItem;
@@ -360,40 +363,28 @@ public class DefaultFileManagerService implements FileManagerService {
 
         try {
             if (ZIP.equals(getFileExtension(zipFileName))) {
-
-                Path outputPath = Paths.get(outputFolder);
-                java.util.zip.ZipFile zf = new java.util.zip.ZipFile(zipFileName);
-                Enumeration<? extends ZipEntry> zipEntries = zf.entries();
-                while (zipEntries.hasMoreElements()) {
-
-                    ZipEntry entry = zipEntries.nextElement();
-                    if (!entry.isDirectory()) {
-                        String entryName = entry.getName();
-                        int lastIndex = entryName.lastIndexOf('/');
-                        String fileName = lastIndex >= 0 ? entry.getName().substring(lastIndex + 1) : entryName;
-                        //Evitar ficheros ocultos
-                        if (!fileName.startsWith(".")) {
-                            Path fileToCreate = outputPath.resolve(prefixName + fileName);
-                                Files.copy(zf.getInputStream(entry), fileToCreate);
-                        }
-                    }
-
+                final ZipFile zipFile = new ZipFile(zipFileName);
+                @SuppressWarnings("unchecked")
+                final List<FileHeader> fileHeaders = zipFile.getFileHeaders();
+                for (final FileHeader fileHeader : fileHeaders) {
+                    zipFile.extractFile(fileHeader, outputFolder, null,
+                            prefixName + fileHeader.getFileName());
                 }
-
             } else {
                 final String errorMessage = ERROR_NO_ERA_UN_ARCHIVO_ZIP;
                 LOGGER.error(errorMessage);
                 throw new ConnectorException(errorMessage);
             }
-        } catch (Exception e) {
+        } catch (final ZipException | ConnectorException e) {
             final String errorMessage = ERROR_NO_SE_PUDO_DESCOMPRIMIR_EL_ZIP;
             LOGGER.error(errorMessage, e);
             throw new ConnectorException(errorMessage, e);
         } finally {
             try {
                 Files.deleteIfExists(Paths.get(zipFileName));
-            } catch (final Exception e) {
-                LOGGER.error(ERROR_NO_SE_PUDO_ELIMINAR_ZIP, e);
+            } catch (final IOException e) {
+                final String errorMessage = ERROR_NO_SE_PUDO_ELIMINAR_ZIP;
+                LOGGER.error(errorMessage, e);
             }
         }
     }
@@ -447,7 +438,7 @@ public class DefaultFileManagerService implements FileManagerService {
                 Files.move(originalFilePath, newPath);
             }
             return prefixName;
-        } catch (final Exception e) {
+        } catch (final IOException | ConnectorException e) {
             final String errorMessage = ERROR_NO_SE_PUDO_AGREGAR_PREFIJO_A_ARCHIVOS;
             LOGGER.error(errorMessage, e);
             throw new ConnectorException(errorMessage, e);
@@ -455,8 +446,8 @@ public class DefaultFileManagerService implements FileManagerService {
     }
 
     @Override
-    public Path getConnectorFile(final long id, final String fileName) throws ConnectorException {
-        return FileUtils.getFile(uploadFolder + id, fileName).toPath();
+    public Path getConnectorXSD(final long id, final String xsdFileName) throws ConnectorException {
+        return FileUtils.getFile(uploadFolder + id, xsdFileName + ".xsd").toPath();
     }
 
     @Override

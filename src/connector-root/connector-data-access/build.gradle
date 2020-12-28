@@ -15,5 +15,4 @@ dependencies {
     compile "org.hibernate:hibernate-core:" + hibernateVersion
     compile "org.hibernate:hibernate-c3p0:" + hibernateVersion
     compile "org.springframework.data:spring-data-jpa:$springDataVersion"
-    compile group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
 }

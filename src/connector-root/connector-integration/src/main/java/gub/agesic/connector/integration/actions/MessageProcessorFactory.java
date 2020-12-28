@@ -6,7 +6,6 @@ package gub.agesic.connector.integration.actions;
 import java.io.InputStream;
 
 import org.springframework.http.MediaType;
-import org.springframework.util.MimeType;
 
 /**
  * @author guzman.llambias
@@ -36,7 +35,7 @@ public class MessageProcessorFactory {
 
     public MessageProcessor<InputStream, String> getInputProcessor(final MediaType type)
             throws MessageProcessorException {
-        if (type.includes(MediaType.TEXT_XML) || type.includes(MimeType.valueOf("application/soap+xml"))) {
+        if (type.includes(MediaType.TEXT_XML)) {
             return stringInputMessageProcessor;
         } else if (type.getType().equals("multipart")) {
             return mtomInputMessageProcessor;
@@ -47,7 +46,7 @@ public class MessageProcessorFactory {
 
     public MessageProcessor<String, byte[]> getOutputProcessor(final MediaType type)
             throws MessageProcessorException {
-        if (type.includes(MediaType.TEXT_XML) || type.includes(MimeType.valueOf("application/soap+xml"))) {
+        if (type.includes(MediaType.TEXT_XML)) {
             return stringOutputMessageProcessor;
         } else if (type.getType().equals("multipart")) {
             return mtomOutputMessageProcessor;

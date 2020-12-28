@@ -44,9 +44,6 @@ public class Connector extends GenericEntity implements Serializable {
     @Column(name = "URL", length = 512)
     private String url;
 
-    @Column(name = "URL_V2", length = 512)
-    private String urlV2;
-
     @Column(name = "WSA_TO", length = 512)
     private String wsaTo;
 
@@ -83,14 +80,8 @@ public class Connector extends GenericEntity implements Serializable {
     @Column(name = "TAG", length = 100)
     private String tag;
 
-    @Column(name = "MULTIPLE_VERSION")
-    private boolean multipleVersion;
-
     @OneToMany(cascade = { CascadeType.ALL }, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<RoleOperation> roleOperations;
-
-    @Transient
-    private String wsdlUrlForUI;
 
     public String getTag() {
         return tag;
@@ -153,14 +144,6 @@ public class Connector extends GenericEntity implements Serializable {
 
     public void setUrl(final String url) {
         this.url = url;
-    }
-
-    public String getUrlV2() {
-        return urlV2;
-    }
-
-    public void setUrlV2(final String urlV2) {
-        this.urlV2 = urlV2;
     }
 
     public String getWsaTo() {
@@ -274,21 +257,5 @@ public class Connector extends GenericEntity implements Serializable {
 
     public void setStsLocalUrl(final String stsLocalUrl) {
         this.stsLocalUrl = stsLocalUrl;
-    }
-
-    public boolean isMultipleVersion() {
-        return multipleVersion;
-    }
-
-    public void setMultipleVersion(final boolean multipleVersion) {
-        this.multipleVersion = multipleVersion;
-    }
-
-    public String getWsdlUrlForUI() {
-        return wsdlUrlForUI;
-    }
-
-    public void setWsdlUrlForUI(String wsdlUrlForUI) {
-        this.wsdlUrlForUI = wsdlUrlForUI;
     }
 }

@@ -1,14 +1,31 @@
 package gub.agesic.connector.services.connectorparser;
 
-import gub.agesic.connector.dataaccess.entity.Connector;
-import gub.agesic.connector.dataaccess.entity.ConnectorLocalConfiguration;
-import gub.agesic.connector.dataaccess.entity.RoleOperation;
-import gub.agesic.connector.dataaccess.entity.UserCredentials;
-import gub.agesic.connector.exceptions.ConnectorException;
-import gub.agesic.connector.services.dbaccess.ConnectorService;
-import gub.agesic.connector.services.filemanager.FileManagerService;
-import gub.agesic.connector.services.wsdlparser.WSDLParserService;
-import gub.agesic.connector.services.xpathparser.XPathParserService;
+import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.FILE_SEPARATOR;
+import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.XML;
+import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.KEYSTORE_ORG_FILENAME;
+import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.KEYSTORE_SSL_FILENAME;
+import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.KEYSTORE_TRUSTSTORE_FILENAME;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,24 +37,15 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.*;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-
-import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.FILE_SEPARATOR;
-import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.XML;
-import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.*;
+import gub.agesic.connector.dataaccess.entity.Connector;
+import gub.agesic.connector.dataaccess.entity.ConnectorLocalConfiguration;
+import gub.agesic.connector.dataaccess.entity.RoleOperation;
+import gub.agesic.connector.dataaccess.entity.UserCredentials;
+import gub.agesic.connector.exceptions.ConnectorException;
+import gub.agesic.connector.services.dbaccess.ConnectorService;
+import gub.agesic.connector.services.filemanager.FileManagerService;
+import gub.agesic.connector.services.wsdlparser.WSDLParserService;
+import gub.agesic.connector.services.xpathparser.XPathParserService;
 
 @Service
 public class DefaultConnectorParserService implements ConnectorParserService {
@@ -46,7 +54,6 @@ public class DefaultConnectorParserService implements ConnectorParserService {
     private static final String CONNECTOR_TYPE = "/connector/type";
     private static final String CONNECTOR_PATH = "/connector/path";
     private static final String CONNECTOR_URL = "/connector/url";
-    private static final String CONNECTOR_URL_V2 = "/connector/urlV2";
     private static final String CONNECTOR_WSDL = "/connector/wsdl";
     private static final String CONNECTOR_KEYSTORE_ORG = "/connector/keystoreOrg";
     private static final String CONNECTOR_KEYSTORE_SSL = "/connector/keystoreSsl";
@@ -66,7 +73,6 @@ public class DefaultConnectorParserService implements ConnectorParserService {
     private static final String CONNECTOR_ENABLE_SSL = "/connector/enableSSL";
     private static final String CONNECTOR_ENABLE_STS_LOCAL = "/connector/enableSTSLocal";
     private static final String CONNECTOR_USERNAME_TOKEN_NAME = "/connector/userNameTokenName";
-    private static final String CONNECTOR_MULTIPLE_VERSION = "/connector/multipleVersion";
     private static final String CONNECTOR_VERSION = "/connector/version";
     private static final String EXPORTED_CONECTOR_FILE_PREFIX = "Conector_";
     private static final String PGE_OLD_VERSION = "2.0";
@@ -80,8 +86,8 @@ public class DefaultConnectorParserService implements ConnectorParserService {
 
     @Autowired
     public DefaultConnectorParserService(final FileManagerService fileManagerService,
-                                         final XPathParserService xPathParserService, final ConnectorService connectorService,
-                                         final WSDLParserService wsdlParserService) {
+            final XPathParserService xPathParserService, final ConnectorService connectorService,
+            final WSDLParserService wsdlParserService) {
         this.fileManagerService = fileManagerService;
         this.xPathParserService = xPathParserService;
         this.connectorService = connectorService;
@@ -110,10 +116,6 @@ public class DefaultConnectorParserService implements ConnectorParserService {
             addChildElement(doc, connectorElement, "type", connector.getType());
             addChildElement(doc, connectorElement, "path", connector.getPath());
             addChildElement(doc, connectorElement, "url", connector.getUrl());
-
-            if (connector.isMultipleVersion()) {
-                addChildElement(doc, connectorElement, "urlV2", connector.getUrlV2());
-            }
 
             // Export wsdl+xsd as a zip file
             final Path path = fileManagerService.getConnectorWSDL(connector.getId(), null);
@@ -157,10 +159,6 @@ public class DefaultConnectorParserService implements ConnectorParserService {
                     String.valueOf(connector.isEnableSsl()));
             addChildElement(doc, connectorElement, "enableSTSLocal",
                     String.valueOf(connector.isEnableSTSLocal()));
-
-            addChildElement(doc, connectorElement, "multipleVersion",
-                    String.valueOf(connector.isMultipleVersion()));
-
             addChildElement(doc, connectorElement, "version", "3.0");
 
             // write the content into xml file
@@ -186,7 +184,7 @@ public class DefaultConnectorParserService implements ConnectorParserService {
     }
 
     private void addRoleOperationElements(final List<RoleOperation> roleOperationsList,
-                                          final Document doc, final Element connectorElement) {
+            final Document doc, final Element connectorElement) {
         for (final RoleOperation roleOperation : roleOperationsList) {
             final Element roleOperationsElement = doc.createElement("role_operation");
             connectorElement.appendChild(roleOperationsElement);
@@ -197,12 +195,11 @@ public class DefaultConnectorParserService implements ConnectorParserService {
                     roleOperation.getOperationFromWSDL());
             addChildElement(doc, roleOperationsElement, "wsaAction", roleOperation.getWsaAction());
             addChildElement(doc, roleOperationsElement, "soapAction", roleOperation.getWsaAction());
-            addChildElement(doc, roleOperationsElement, "soapVersion", roleOperation.getSoapVersion());
         }
     }
 
     private void addChildElement(final Document doc, final Element parentElement,
-                                 final String elementKey, final String elementValue) {
+            final String elementKey, final String elementValue) {
         final Element childElement = doc.createElement(elementKey);
         childElement.appendChild(doc.createTextNode(elementValue));
         parentElement.appendChild(childElement);
@@ -210,7 +207,7 @@ public class DefaultConnectorParserService implements ConnectorParserService {
 
     @Override
     public Connector importConnectorData(final Model model, final String prefixNameConnector,
-                                         final Connector connector) throws ConnectorException {
+            final Connector connector) throws ConnectorException {
 
         final Path filePath = fileManagerService.getConnectorXML(prefixNameConnector);
         final File file = new File(filePath.toString());
@@ -261,18 +258,15 @@ public class DefaultConnectorParserService implements ConnectorParserService {
         final Node wsaToNode = xPathParserService.getXPathResultNode(CONNECTOR_WSA_TO, nodeSource);
         connector.setWsaTo(xPathParserService.getStringNodeValue(wsaToNode));
 
-        final Node tagNode = xPathParserService.getXPathResultNode(CONNECTOR_TAG, nodeSource);
-        connector.setTag(xPathParserService.getStringNodeValue(tagNode));
-
-        final Node urlV2Node = xPathParserService.getXPathResultNode(CONNECTOR_URL_V2, nodeSource);
-        connector.setUrlV2(xPathParserService.getStringNodeValue(urlV2Node));
-
         final Node usernameNode = xPathParserService.getXPathResultNode(CONNECTOR_USERNAME,
                 nodeSource);
         connector.setUsername(xPathParserService.getStringNodeValue(usernameNode));
 
         final Node issuerNode = xPathParserService.getXPathResultNode(CONNECTOR_ISSUER, nodeSource);
         connector.setIssuer(xPathParserService.getStringNodeValue(issuerNode));
+
+        final Node tagNode = xPathParserService.getXPathResultNode(CONNECTOR_TAG, nodeSource);
+        connector.setTag(xPathParserService.getStringNodeValue(tagNode));
 
         final Node enableCacheTokensNode = xPathParserService
                 .getXPathResultNode(CONNECTOR_ENABLE_CACHE_TOKENS, nodeSource);
@@ -286,10 +280,6 @@ public class DefaultConnectorParserService implements ConnectorParserService {
         final Node enableSTSLocal = xPathParserService
                 .getXPathResultNode(CONNECTOR_ENABLE_STS_LOCAL, nodeSource);
         connector.setEnableSTSLocal(xPathParserService.getBooleanNodeValue(enableSTSLocal));
-
-        final Node multipleVersion = xPathParserService
-                .getXPathResultNode(CONNECTOR_MULTIPLE_VERSION, nodeSource);
-        connector.setMultipleVersion(xPathParserService.getBooleanNodeValue(multipleVersion));
 
         // LOCAL CONFIGURATION
         final Node enableLocalConfNode = xPathParserService
@@ -322,25 +312,24 @@ public class DefaultConnectorParserService implements ConnectorParserService {
             connector.setLocalConfiguration(localConfiguration);
 
             importKeystores(nodeSource, connectorDirectory);
-            //}
-            // END LOCAL CONFIGURATION
-
-            // USER CREDENTIALS
-            final Node enableUserTokenNode = xPathParserService
-                    .getXPathResultNode(CONNECTOR_ENABLE_USER_TOKEN, nodeSource);
-            final boolean hasEnabledUserCredentials = xPathParserService
-                    .getBooleanNodeValue(enableUserTokenNode);
-            connector.setEnableUserCredentials(hasEnabledUserCredentials);
-            if (hasEnabledUserCredentials) {
-                final UserCredentials userCredentials = new UserCredentials();
-                final Node usernameTokenNameNode = xPathParserService
-                        .getXPathResultNode(CONNECTOR_USERNAME_TOKEN_NAME, nodeSource);
-                userCredentials.setUserNameTokenName(
-                        xPathParserService.getStringNodeValue(usernameTokenNameNode));
-                connector.setUserCredentials(userCredentials);
-            }
-            // END USER CREDENTIALS
         }
+        // END LOCAL CONFIGURATION
+
+        // USER CREDENTIALS
+        final Node enableUserTokenNode = xPathParserService
+                .getXPathResultNode(CONNECTOR_ENABLE_USER_TOKEN, nodeSource);
+        final boolean hasEnabledUserCredentials = xPathParserService
+                .getBooleanNodeValue(enableUserTokenNode);
+        connector.setEnableUserCredentials(hasEnabledUserCredentials);
+        if (hasEnabledUserCredentials) {
+            final UserCredentials userCredentials = new UserCredentials();
+            final Node usernameTokenNameNode = xPathParserService
+                    .getXPathResultNode(CONNECTOR_USERNAME_TOKEN_NAME, nodeSource);
+            userCredentials.setUserNameTokenName(
+                    xPathParserService.getStringNodeValue(usernameTokenNameNode));
+            connector.setUserCredentials(userCredentials);
+        }
+        // END USER CREDENTIALS
 
         // ROLE OPERATIONS
         final List<Node> roleOperationsNode = xPathParserService
@@ -378,14 +367,14 @@ public class DefaultConnectorParserService implements ConnectorParserService {
     private String getConnectorType(final Node typeNode) {
         String type = xPathParserService.getStringNodeValue(typeNode);
         switch (type) {
-            case "Prod":
-                type = "Produccion";
-                break;
-            case "Test":
-                type = "Testing";
-                break;
-            default:
-                break;
+        case "Prod":
+            type = "Produccion";
+            break;
+        case "Test":
+            type = "Testing";
+            break;
+        default:
+            break;
         }
         return type;
     }
@@ -416,7 +405,7 @@ public class DefaultConnectorParserService implements ConnectorParserService {
     }
 
     private void importSingleKeystore(final Node nodeSource, final Path connectorDirectory,
-                                      final String filterExpression, final String keystoreName) throws ConnectorException {
+            final String filterExpression, final String keystoreName) throws ConnectorException {
         final Node keystoreNode = xPathParserService.getXPathResultNode(filterExpression,
                 nodeSource);
         try {
@@ -456,14 +445,8 @@ public class DefaultConnectorParserService implements ConnectorParserService {
                 wsaAction = wsaActionNode.getTextContent();
             }
 
-            final Node soapVersionNode = xPathParserService.getNodeByName(node, "soapVersion");
-            String soapVersion = "1.1";
-            if (soapVersionNode != null) {
-                soapVersion = soapVersionNode.getTextContent();
-            }
-
             roleOperations
-                    .add(new RoleOperation(role, operationInputName, operationName, wsaAction, soapVersion));
+                    .add(new RoleOperation(role, operationInputName, operationName, wsaAction));
         }
         return roleOperations;
     }

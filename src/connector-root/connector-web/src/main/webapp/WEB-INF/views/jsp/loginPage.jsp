@@ -38,7 +38,9 @@
     </form>
 </section>
 
-<%@include file="footer.jsp" %>
+<footer>
+    <p>Powered by Pyxis PGE V. 3.0</p>
+</footer>
 
 </body>
 </html>

@@ -25,9 +25,6 @@ public class RoleOperation extends GenericEntity {
     @Column(name = "WSA_ACTION", length = 256)
     private String wsaAction;
 
-    @Column(name = "SOAP_VERSION", length = 10)
-    private String soapVersion;
-
     public RoleOperation() {
     }
 
@@ -37,15 +34,6 @@ public class RoleOperation extends GenericEntity {
         this.operationInputName = operationInputName;
         this.operationFromWSDL = operationFromWSDL;
         this.wsaAction = wsaAction;
-        this.soapVersion = "1.1";
-    }
-
-    public RoleOperation(final String role, final String operationInputName, final String operationFromWSDL, final String wsaAction, final String soapVersion) {
-        this.role = role;
-        this.operationInputName = operationInputName;
-        this.operationFromWSDL = operationFromWSDL;
-        this.wsaAction = wsaAction;
-        this.soapVersion = soapVersion;
     }
 
     public String getWsaAction() {
@@ -78,13 +66,5 @@ public class RoleOperation extends GenericEntity {
 
     public void setOperationFromWSDL(final String operationFromWSDL) {
         this.operationFromWSDL = operationFromWSDL;
-    }
-
-    public String getSoapVersion() {
-        return soapVersion;
-    }
-
-    public void setSoapVersion(final String soapVersion) {
-        this.soapVersion = soapVersion;
     }
 }

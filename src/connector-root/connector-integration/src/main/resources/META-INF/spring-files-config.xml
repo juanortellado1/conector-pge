@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:int="http://www.springframework.org/schema/integration"
        xmlns:int-http="http://www.springframework.org/schema/integration/http"
        xmlns:util="http://www.springframework.org/schema/util"
-       xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
 		http://www.springframework.org/schema/integration/http http://www.springframework.org/schema/integration/http/spring-integration-http-4.3.xsd
 		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-4.3.xsd
@@ -20,42 +20,11 @@
                               message-converters="messageConverterList">
     </int-http:inbound-gateway>
 
-    <!-- begin fetch wsdl routes -->
-
-    <int-http:inbound-gateway request-channel="connectorHttpGetWsdlInboundChannel" path="/**"
-                              supported-methods="GET"
-                              reply-timeout="${connector.http.client.request.timeout}">
-    </int-http:inbound-gateway>
-
-    <int:channel id="connectorHttpGetWsdlInboundChannel"/>
-    <int:channel id="wsdlFetchFilteredChannel"/>
-    <int:channel id="rejectedWsdlFetchFilteredChannel"/>
-    <int:channel id="wsdlFilesFetchFilteredChannel"/>
-    <int:channel id="rejectedFetchFilteredChannel"/>
-
-    <int:filter input-channel="connectorHttpGetWsdlInboundChannel" ref="wsdlFetcherFilter"
-                output-channel="wsdlFetchFilteredChannel" discard-channel="rejectedWsdlFetchFilteredChannel"/>
-
-    <int:service-activator input-channel="wsdlFetchFilteredChannel" ref="wsdlFetcherBean" method="process"
-                           requires-reply="true"/>
-
-    <int:filter input-channel="rejectedWsdlFetchFilteredChannel" ref="wsdlFilesFetcherFilter"
-                output-channel="wsdlFilesFetchFilteredChannel" discard-channel="rejectedFetchFilteredChannel"/>
-
-    <int:service-activator input-channel="wsdlFilesFetchFilteredChannel" ref="wsdlFilesFetcherBean" method="process"
-                           requires-reply="true"/>
-
-    <int:service-activator input-channel="rejectedFetchFilteredChannel" ref="rejectedMessageBean" method="process"
-                           requires-reply="true"/>
-
-    <!-- end fetch wsdl routes -->
-
     <!-- INBOUND - log interceptor -->
     <int:channel id="connectorHttpInboundChannel"/>
 
-    <int:header-enricher id="initialTimestampHeaderEnricher" input-channel="connectorHttpInboundChannel"
-                         output-channel="messageProcessorChannel">
-        <int:header name="initialTimestamp" ref="timestampEnricherBean" method="enrich"/>
+    <int:header-enricher id="initialTimestampHeaderEnricher" input-channel="connectorHttpInboundChannel" output-channel="messageProcessorChannel">
+        <int:header name="initialTimestamp" ref="timestampEnricherBean" method="enrich" />
     </int:header-enricher>
 
     <int:channel id="messageProcessorChannel"/>
@@ -65,21 +34,20 @@
                            output-channel="connectorHeaderEnricherChannel"
                            ref="basicMessageCoordinatorBean" method="process" requires-reply="true"/>
 
-    <int:channel id="connectorHeaderEnricherChannel"/>
+    <int:channel id="connectorHeaderEnricherChannel"></int:channel>
 
     <int:header-enricher input-channel="connectorHeaderEnricherChannel" output-channel="contentTypeFilter">
         <int:header name="contentType" expression="headers['content-type']"/>
     </int:header-enricher>
 
-    <int:channel id="contentTypeFilter"/>
+    <int:channel id="contentTypeFilter"></int:channel>
 
     <int:header-filter input-channel="contentTypeFilter" output-channel="connectorPDIHttpRequestChannel"
                        header-names="content-type"/>
 
     <int:channel id="connectorPDIHttpRequestChannel"/>
 
-    <int:service-activator input-channel="connectorPDIHttpRequestChannel"
-                           output-channel="connectorPDIHttpResponseChannel"
+    <int:service-activator input-channel="connectorPDIHttpRequestChannel" output-channel="connectorPDIHttpResponseChannel"
                            ref="conectorRestTemplate" method="process"/>
 
     <int:channel id="connectorPDIHttpResponseChannel">
@@ -101,15 +69,13 @@
 
     <int:channel id="outputSerializacionChannel"/>
 
-    <int:service-activator id="outputSerializacionBean" input-channel="outputSerializacionChannel"
-                           output-channel="connectorPDIHttpResponseChannel"
-                           requires-reply="true" ref="inputStreamOutputConverterBean" method="process"/>
+    <int:service-activator id="outputSerializacionBean" input-channel="outputSerializacionChannel" output-channel="connectorPDIHttpResponseChannel" 
+        requires-reply="true" ref="inputStreamOutputConverterBean" method="process"/>
 
     <bean id="errorHandler" class="gub.agesic.connector.integration.exception.ConnectorErrorHandler"/>
 
     <util:list id="messageConverterList">
-        <bean id="conectorMessageConverterBean"
-              class="gub.agesic.connector.integration.support.ConectorHttpMessageConverter"/>
+        <bean id="conectorMessageConverterBean" class="gub.agesic.connector.integration.support.ConectorHttpMessageConverter"/>
     </util:list>
 
     <bean id="WSInvokeService" class="gub.agesic.connector.integration.actions.WSInvokeService"/>
@@ -126,14 +92,11 @@
     <bean id="mtomInputMessageProcessorBean" class="gub.agesic.connector.integration.actions.MTOMInputMessageProcessor">
         <constructor-arg name="tempFolderLocation" value="${java.io.tmpdir}"/>
     </bean>
-    <bean id="mtomOutputMessageProcessorBean"
-          class="gub.agesic.connector.integration.actions.MTOMOutputMessageProcessor">
+    <bean id="mtomOutputMessageProcessorBean" class="gub.agesic.connector.integration.actions.MTOMOutputMessageProcessor">
         <constructor-arg name="tempFolderLocation" value="${java.io.tmpdir}"/>
     </bean>
-    <bean id="stringInputMessageProcessor"
-          class="gub.agesic.connector.integration.actions.StringInputMessageProcessor"/>
-    <bean id="stringOutputMessageProcessor"
-          class="gub.agesic.connector.integration.actions.StringOutputMessageProcessor"/>
+    <bean id="stringInputMessageProcessor" class="gub.agesic.connector.integration.actions.StringInputMessageProcessor"/>
+    <bean id="stringOutputMessageProcessor" class="gub.agesic.connector.integration.actions.StringOutputMessageProcessor"/>
     <bean id="conectorRestTemplate" class="gub.agesic.connector.integration.actions.ConectorRestTemplate">
         <constructor-arg name="mapper">
             <bean id="headerMapper" class="org.springframework.integration.http.support.DefaultHttpHeaderMapper">
@@ -144,20 +107,6 @@
         <constructor-arg name="connectTimeout" value="${connector.http.service.connection.timeout}"/>
         <constructor-arg name="readTimeout" value="${connector.http.service.read.timeout}"/>
     </bean>
-    <bean id="inputStreamOutputConverterBean"
-          class="gub.agesic.connector.integration.support.InputStreamOutputConverter"/>
+    <bean id="inputStreamOutputConverterBean" class="gub.agesic.connector.integration.support.InputStreamOutputConverter"/>
     <bean id="timestampEnricherBean" class="gub.agesic.connector.integration.actions.TimestampEnricher"/>
-
-    <bean id="wsdlFetcherFilter" class="gub.agesic.connector.integration.actions.WsdlFetcherFilter"/>
-    <bean id="wsdlFetcherBean" class="gub.agesic.connector.integration.actions.WsdlFetcher">
-        <constructor-arg name="connectorWsdlService" ref="connectorWsdlService"/>
-    </bean>
-
-    <bean id="wsdlFilesFetcherFilter" class="gub.agesic.connector.integration.actions.WsdlFilesFetcherFilter"/>
-    <bean id="wsdlFilesFetcherBean" class="gub.agesic.connector.integration.actions.WsdlFilesFetcher">
-        <constructor-arg name="connectorWsdlService" ref="connectorWsdlService"/>
-    </bean>
-
-    <bean id="rejectedMessageBean" class="gub.agesic.connector.integration.actions.RejectedMessage"/>
-    <bean id="connectorWsdlService" class="gub.agesic.connector.integration.controller.ConnectorWsdlService"/>
 </beans>

@@ -5,7 +5,6 @@ import java.util.List;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import gub.agesic.connector.pojo.SoapVersionInfo;
 import org.springframework.web.multipart.MultipartFile;
 import org.w3c.dom.Node;
 
@@ -39,6 +38,4 @@ public interface XPathParserService {
 
     Node getFileDocumentElement(final DocumentBuilderFactory factory, final MultipartFile file)
             throws ConnectorException;
-
-    SoapVersionInfo soapVersionInfo(final Node nodeSource);
 }

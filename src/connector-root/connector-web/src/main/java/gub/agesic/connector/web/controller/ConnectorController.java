@@ -1,5 +1,43 @@
 package gub.agesic.connector.web.controller;
 
+import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.ALLOWED_EXTENSIONS;
+import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.XML;
+import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.ZIP;
+import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.KEYSTORE_ORG_FILENAME;
+import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.KEYSTORE_SSL_FILENAME;
+import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.KEYSTORE_TRUSTSTORE_FILENAME;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItem;
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.SessionAttributes;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.commons.CommonsMultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import gub.agesic.connector.dataaccess.entity.Connector;
 import gub.agesic.connector.dataaccess.entity.KeystoreModalData;
 import gub.agesic.connector.dataaccess.repository.ConnectorType;
@@ -9,33 +47,9 @@ import gub.agesic.connector.services.dbaccess.ConnectorService;
 import gub.agesic.connector.services.filemanager.FileManagerService;
 import gub.agesic.connector.services.keystoremanager.KeystoreManagerService;
 import gub.agesic.connector.services.wsdlparser.WSDLParserService;
-import gub.agesic.connector.web.servlet3.MyWebInitializer;
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.disk.DiskFileItem;
-import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.commons.CommonsMultipartFile;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-
-import static gub.agesic.connector.services.filemanager.DefaultFileManagerService.*;
-import static gub.agesic.connector.services.keystoremanager.DefaultKeystoreManagerService.*;
 
 @Controller
-@SessionAttributes(value = {"type", "tag"})
+@SessionAttributes(value = { "type", "tag" })
 public class ConnectorController {
 
     public static final String CONNECTOR = "connector";
@@ -48,9 +62,6 @@ public class ConnectorController {
     public static final String SUCCESS = "success";
     public static final String CSS = "css";
     public static final String MSG = "msg";
-
-    public static final String PATH_UPLOAD_IMPORT = "/connectors/import";
-    public static final String PATH_UPLOAD_ADD = "/connectors/add/uploadFile";
 
     public static final String CONECTOR_CREADO_EXITOSAMENTE = "Conector creado exitosamente !";
     public static final String CONECTOR_IMPORTADO_EXITOSAMENTE = "Conector importado exitosamente ! En caso de importar una configuración local, no olvide ingresar las contraseñas";
@@ -76,9 +87,11 @@ public class ConnectorController {
     public static final String KEYSTORE_SSL_MODALNAME = "Keystore SSL";
     public static final String KEYSTORE_ORG_MODALNAME = "Keystore Org";
     public static final String KEYSTORE_TRUSTSTORE_MODALNAME = "Truststore";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectorController.class);
     public static final String ERROR_AL_COPIAR_WSDL_AL_RESPONSE = "Error al acceder al archivo wsdl del conectorId :";
     public static final String TYPE_CONNECTOR = "type";
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectorController.class);
+
     @Autowired
     private KeystoreManagerService keystoreManagerService;
     @Autowired
@@ -92,15 +105,15 @@ public class ConnectorController {
 
     @GetMapping("/connectors/connector/{id}")
     public ModelAndView getConnector(@PathVariable("id") final long connectorId,
-                                     final RedirectAttributes redirectAttributes) {
+            final RedirectAttributes redirectAttributes) {
 
         return getConnectorView(connectorId, redirectAttributes, VIEW_CONNECTOR);
     }
 
     @GetMapping("/connectors/connector/{id}/wsdl")
     public void getConnectorWSDL(@PathVariable("id") final long connectorId,
-                                 final HttpServletResponse response, final RedirectAttributes redirectAttributes,
-                                 @RequestParam(value = "download", required = false, defaultValue = "false") final boolean isDownload)
+            final HttpServletResponse response, final RedirectAttributes redirectAttributes,
+            @RequestParam(value = "download", required = false, defaultValue = "false") final boolean isDownload)
             throws ConnectorException {
 
         final Connector connector = getConnectorByID(connectorId, redirectAttributes);
@@ -138,38 +151,38 @@ public class ConnectorController {
         }
     }
 
-//    @GetMapping("/connectors/connector/{id}/{xsdFileName}.xsd")
-//    public void getXsdWSDL(@PathVariable("id") final long connectorId,
-//                           @PathVariable("xsdFileName") final String xsdFileName,
-//                           final HttpServletResponse response, final RedirectAttributes redirectAttributes)
-//            throws ConnectorException {
-//
-//        final Connector connector = getConnectorByID(connectorId, redirectAttributes);
-//        final String errorMessage = ERROR_NO_EXISTE_WSDL_DEL_CONECTOR;
-//        if (connector != null) {
-//            try {
-//                final Path file = fileManagerService.getConnectorXSD(connectorId, xsdFileName);
-//                if (file.toFile().exists()) {
-//                    response.setContentType("application/xml");
-//                    response.addHeader("Content-Disposition",
-//                            "inline; filename=" + file.getFileName());
-//                    saveFileToResponse(connectorId, response, file);
-//                } else {
-//                    throw new ConnectorException(errorMessage);
-//                }
-//            } catch (final ConnectorException e) {
-//                redirectAttributes.addFlashAttribute(CSS, DANGER);
-//                redirectAttributes.addFlashAttribute(MSG, e.getMessage());
-//            }
-//        } else {
-//            redirectAttributes.addFlashAttribute(CSS, DANGER);
-//            redirectAttributes.addFlashAttribute(MSG, ERROR_NO_EXISTE_CONNECTOR + connectorId);
-//        }
-//    }
+    @GetMapping("/connectors/connector/{id}/{xsdFileName}.xsd")
+    public void getXsdWSDL(@PathVariable("id") final long connectorId,
+            @PathVariable("xsdFileName") final String xsdFileName,
+            final HttpServletResponse response, final RedirectAttributes redirectAttributes)
+            throws ConnectorException {
+
+        final Connector connector = getConnectorByID(connectorId, redirectAttributes);
+        final String errorMessage = ERROR_NO_EXISTE_WSDL_DEL_CONECTOR;
+        if (connector != null) {
+            try {
+                final Path file = fileManagerService.getConnectorXSD(connectorId, xsdFileName);
+                if (file.toFile().exists()) {
+                    response.setContentType("application/xml");
+                    response.addHeader("Content-Disposition",
+                            "inline; filename=" + file.getFileName());
+                    saveFileToResponse(connectorId, response, file);
+                } else {
+                    throw new ConnectorException(errorMessage);
+                }
+            } catch (final ConnectorException e) {
+                redirectAttributes.addFlashAttribute(CSS, DANGER);
+                redirectAttributes.addFlashAttribute(MSG, e.getMessage());
+            }
+        } else {
+            redirectAttributes.addFlashAttribute(CSS, DANGER);
+            redirectAttributes.addFlashAttribute(MSG, ERROR_NO_EXISTE_CONNECTOR + connectorId);
+        }
+    }
 
     @GetMapping("/connectors/connector/{id}/keystoreOrg")
     public void getConnectorKeystoreOrg(@PathVariable("id") final long connectorId,
-                                        final HttpServletResponse response, final RedirectAttributes redirectAttributes)
+            final HttpServletResponse response, final RedirectAttributes redirectAttributes)
             throws ConnectorException {
 
         getConnectorKeystore(connectorId, response, redirectAttributes, KEYSTORE_ORG_FILENAME);
@@ -177,7 +190,7 @@ public class ConnectorController {
 
     @GetMapping("/connectors/connector/{id}/keystoreSsl")
     public void getConnectorKeystoreSsl(@PathVariable("id") final long connectorId,
-                                        final HttpServletResponse response, final RedirectAttributes redirectAttributes)
+            final HttpServletResponse response, final RedirectAttributes redirectAttributes)
             throws ConnectorException {
 
         getConnectorKeystore(connectorId, response, redirectAttributes, KEYSTORE_SSL_FILENAME);
@@ -185,7 +198,7 @@ public class ConnectorController {
 
     @GetMapping("/connectors/connector/{id}/truststore")
     public void getConnectorTruststore(@PathVariable("id") final long connectorId,
-                                       final HttpServletResponse response, final RedirectAttributes redirectAttributes)
+            final HttpServletResponse response, final RedirectAttributes redirectAttributes)
             throws ConnectorException {
 
         getConnectorKeystore(connectorId, response, redirectAttributes,
@@ -193,22 +206,14 @@ public class ConnectorController {
     }
 
     @GetMapping("/connectors/add")
-    public ModelAndView createConnectorStep1(Model model) {
-        int maxUploadSize = MyWebInitializer.DEFAULT_MAX_UPLOAD_SIZE * 1024 * 1024;
-        try {
-            maxUploadSize = connectorService.getMaxUploadSize();
-        } catch (ConnectorException e) {
-            LOGGER.info(e.getMessage() + "Se utiliza el valor por defecto: " + MyWebInitializer.DEFAULT_MAX_UPLOAD_SIZE);
-        }
-
-        model.addAttribute("max_upload_size", maxUploadSize);
+    public ModelAndView createConnectorStep1() {
 
         return new ModelAndView(VIEW_EDIT_1ST_STEP);
     }
 
     @GetMapping("/connectors/connector/{id}/edit")
     public ModelAndView editConnector(@PathVariable("id") final long connectorId,
-                                      final RedirectAttributes redirectAttributes) {
+            final RedirectAttributes redirectAttributes) {
 
         return getConnectorView(connectorId, redirectAttributes, VIEW_EDIT_1ST_STEP);
     }
@@ -216,7 +221,7 @@ public class ConnectorController {
     @PostMapping("/connectors/connector/{id}/add/uploadFile")
     public ModelAndView uploadAndParseNewWSDL(
             @RequestParam("uploaded_file") final MultipartFile file, final Model model,
-            @PathVariable("id") final long connectorId, final RedirectAttributes redirectAttributes, @SessionAttribute("type") String type)
+            @PathVariable("id") final long connectorId, final RedirectAttributes redirectAttributes)
             throws ConnectorException {
         final Connector connector = getConnectorByID(connectorId, redirectAttributes);
 
@@ -246,15 +251,15 @@ public class ConnectorController {
             // de ese archivo
             else {
                 fileManagerService.deleteConnectorDirectoryFiles(Long.toString(connectorId), true);
-                return uploadAndParseWSDL(file, model, connector, redirectAttributes, type);
+                return uploadAndParseWSDL(file, model, connector, redirectAttributes);
             }
         }
     }
 
-    @PostMapping(PATH_UPLOAD_ADD)
+    @PostMapping("/connectors/add/uploadFile")
     public ModelAndView uploadAndParseWSDL(@RequestParam("uploaded_file") final MultipartFile file,
-                                           final Model model, final Connector connector,
-                                           final RedirectAttributes redirectAttributes, @SessionAttribute("type") String type) throws ConnectorException {
+            final Model model, final Connector connector,
+            final RedirectAttributes redirectAttributes) throws ConnectorException {
 
         try {
             // Si no se eligió ningún archivo, envío mensaje de error
@@ -283,11 +288,9 @@ public class ConnectorController {
             // Parseo el WSDL y cargo el conector con los datos obtenidos.
             // Si el conector no existía, lo construyo
             if (connector == null) {
-                Connector emptyConnector = new Connector();
-                emptyConnector.setType(type);
-                newConnector = wsdlParserService.getWSDLData(model, prefixNameConnector, emptyConnector);
+                newConnector = wsdlParserService.getWSDLData(model, prefixNameConnector,
+                        new Connector());
             } else {
-                connector.setType(type);
                 newConnector = wsdlParserService.getWSDLData(model, prefixNameConnector, connector);
             }
             model.addAttribute(CONNECTOR, newConnector);
@@ -304,11 +307,11 @@ public class ConnectorController {
 
     @PostMapping("/connectors/add")
     public ModelAndView createConnectorStep2(final @ModelAttribute(CONNECTOR) Connector connector,
-                                             @RequestParam("prefixNameConnector") final String prefixNameConnector,
-                                             @RequestParam(value = "keystoreOrgFile", required = false) final MultipartFile keystoreOrgFile,
-                                             @RequestParam(value = "keystoreSSLFile", required = false) final MultipartFile keystoreSSLFile,
-                                             @RequestParam(value = "keystoreTruststoreFile", required = false) final MultipartFile keystoreTruststoreFile,
-                                             final RedirectAttributes redirectAttributes, final Model model)
+            @RequestParam("prefixNameConnector") final String prefixNameConnector,
+            @RequestParam(value = "keystoreOrgFile", required = false) final MultipartFile keystoreOrgFile,
+            @RequestParam(value = "keystoreSSLFile", required = false) final MultipartFile keystoreSSLFile,
+            @RequestParam(value = "keystoreTruststoreFile", required = false) final MultipartFile keystoreTruststoreFile,
+            final RedirectAttributes redirectAttributes, final Model model)
             throws ConnectorException {
 
         try {
@@ -325,21 +328,6 @@ public class ConnectorController {
             model.addAttribute(MSG, errorMessage);
             return new ModelAndView(VIEW_EDIT_2ND_STEP, CONNECTOR, connector);
         }
-
-        connectorService.updateConnectorPath(connector);
-
-        //Patrón para validar ruta:
-        //Que comience por '/'
-        //Luego combinaciones de caracteres alfanuméricos, underscore (_) o guion (-)
-        String pattern = "([/][\\w-]+)+";
-        if (!connector.getPath().matches(pattern)) {
-            final String msg = "Path incorrecto. Debe contener caracteres alfanuméricos, underscore (_) o guion (-) (Ejemplo: /1_texto/texto-2/otroTextoMas)";
-            LOGGER.info(msg);
-            model.addAttribute(CSS, DANGER);
-            model.addAttribute(MSG, msg);
-            return new ModelAndView(VIEW_EDIT_2ND_STEP, CONNECTOR, connector);
-        }
-
         connectorService.saveConnector(connector);
         final String connectorId = connector.getId().toString();
         if (fileManagerService.isConnectorDirectory(connectorId)) {
@@ -371,10 +359,12 @@ public class ConnectorController {
 
                 connectorService.saveConnector(connector);
 
-                MultipartFile toSaveFile = fileManagerService.getConnectorWSDLNewFile(connector.getId(), null);
+                // Cambio el soap:address location del wsdl
+                final MultipartFile toSaveFile = fileManagerService
+                        .getConnectorWSDLNewFile(connector.getId(), null);
                 final Path path = fileManagerService.getConnectorWSDL(connector.getId(), null);
                 final String location = connectorService.getLocationBasedOnConnector(connector);
-                wsdlParserService.modifyLocationAndSave(toSaveFile, location, path, connector.getPath());
+                wsdlParserService.modifyLocationAndSave(toSaveFile, location, path);
 
                 redirectAttributes.addFlashAttribute(CSS, SUCCESS);
                 redirectAttributes.addFlashAttribute(MSG, CONECTOR_CREADO_EXITOSAMENTE);
@@ -391,12 +381,12 @@ public class ConnectorController {
 
     @PostMapping("/connectors/connector/{id}/update")
     public ModelAndView updateConnector(@ModelAttribute(CONNECTOR) final Connector updatedConnector,
-                                        @RequestParam("prefixNameConnector") final String prefixNameConnector,
-                                        @PathVariable("id") final long connectorId,
-                                        @RequestParam(value = "keystoreOrgFile", required = false) final MultipartFile keystoreOrgFile,
-                                        @RequestParam(value = "keystoreSSLFile", required = false) final MultipartFile keystoreSSLFile,
-                                        @RequestParam(value = "keystoreTruststoreFile", required = false) final MultipartFile keystoreTrustoreFile,
-                                        final RedirectAttributes redirectAttributes, final Model model)
+            @RequestParam("prefixNameConnector") final String prefixNameConnector,
+            @PathVariable("id") final long connectorId,
+            @RequestParam(value = "keystoreOrgFile", required = false) final MultipartFile keystoreOrgFile,
+            @RequestParam(value = "keystoreSSLFile", required = false) final MultipartFile keystoreSSLFile,
+            @RequestParam(value = "keystoreTruststoreFile", required = false) final MultipartFile keystoreTrustoreFile,
+            final RedirectAttributes redirectAttributes, final Model model)
             throws ConnectorException {
 
         if (updatedConnector == null) {
@@ -430,13 +420,15 @@ public class ConnectorController {
             }
             updateUserCredentials(updatedConnector, connector);
 
-            connectorService.updateConnectorPath(updatedConnector);
             connectorService.saveConnector(updatedConnector);
 
-            final MultipartFile toSaveFile = fileManagerService.getConnectorWSDLNewFile(connector.getId(), null);
+            // Cambio el soap:address location del wsdl
+            final MultipartFile toSaveFile = fileManagerService
+                    .getConnectorWSDLNewFile(connector.getId(), null);
             final Path path = fileManagerService.getConnectorWSDL(connector.getId(), null);
+
             final String location = connectorService.getLocationBasedOnConnector(updatedConnector);
-            wsdlParserService.modifyLocationAndSave(toSaveFile, location, path, updatedConnector.getPath());
+            wsdlParserService.modifyLocationAndSave(toSaveFile, location, path);
 
             redirectAttributes.addFlashAttribute(CSS, SUCCESS);
             redirectAttributes.addFlashAttribute(MSG, CONECTOR_ACTUALIZADO_EXITOSAMENTE);
@@ -467,7 +459,7 @@ public class ConnectorController {
 
     @GetMapping("/connectors/connector/{id}/delete")
     public ModelAndView deleteConnector(@PathVariable("id") final long connectorId,
-                                        final RedirectAttributes redirectAttributes) throws ConnectorException {
+            final RedirectAttributes redirectAttributes) throws ConnectorException {
 
         final Connector connector = getConnectorByID(connectorId, redirectAttributes);
         final String connectorName;
@@ -490,7 +482,7 @@ public class ConnectorController {
 
     @GetMapping("/connectors/connector/{id}/export")
     public void exportConnector(@PathVariable("id") final long connectorId,
-                                final HttpServletResponse response, final RedirectAttributes redirectAttributes)
+            final HttpServletResponse response, final RedirectAttributes redirectAttributes)
             throws ConnectorException {
 
         final Connector connector = getConnectorByID(connectorId, redirectAttributes);
@@ -506,9 +498,9 @@ public class ConnectorController {
         }
     }
 
-    @PostMapping(PATH_UPLOAD_IMPORT)
+    @PostMapping("/connectors/import")
     public ModelAndView importConnector(@RequestParam("uploaded_file") final MultipartFile file,
-                                        final Model model, final RedirectAttributes redirectAttributes)
+            final Model model, final RedirectAttributes redirectAttributes)
             throws ConnectorException {
 
         final Connector importedConnector = new Connector();
@@ -541,10 +533,12 @@ public class ConnectorController {
             keystoreManagerService.setKeystoresFilePaths(newConnector);
             connectorService.saveConnector(newConnector);
 
-            final MultipartFile toSaveFile = fileManagerService.getConnectorWSDLNewFile(newConnector.getId(), null);
+            // Change wsdl soap:address location
+            final MultipartFile toSaveFile = fileManagerService
+                    .getConnectorWSDLNewFile(newConnector.getId(), null);
             final Path path = fileManagerService.getConnectorWSDL(newConnector.getId(), null);
             final String location = connectorService.getLocationBasedOnConnector(newConnector);
-            wsdlParserService.modifyLocationAndSave(toSaveFile, location, path, newConnector.getPath());
+            wsdlParserService.modifyLocationAndSave(toSaveFile, location, path);
 
             redirectAttributes.addFlashAttribute(CSS, SUCCESS);
             redirectAttributes.addFlashAttribute(MSG, CONECTOR_IMPORTADO_EXITOSAMENTE);
@@ -560,7 +554,7 @@ public class ConnectorController {
     }
 
     public void getConnectorKeystore(final long connectorId, final HttpServletResponse response,
-                                     final RedirectAttributes redirectAttributes, final String keystoreName)
+            final RedirectAttributes redirectAttributes, final String keystoreName)
             throws ConnectorException {
         final Connector connector = getConnectorByID(connectorId, redirectAttributes);
         final String errorMessage = ERROR_NO_SE_PUDO_ENCONTRAR_KEYSTORE + keystoreName;
@@ -593,7 +587,7 @@ public class ConnectorController {
     }
 
     public void updateUserCredentials(final @ModelAttribute(CONNECTOR) Connector updatedConnector,
-                                      final Connector connector) {
+            final Connector connector) {
         if (updatedConnector.isEnableUserCredentials()) {
             if (connector.getUserCredentials() != null) {
                 final Long userCredentialsId = connector.getUserCredentials().getId();
@@ -622,12 +616,12 @@ public class ConnectorController {
             keystoreManagerService.uploadKeystoresConnector(updatedConnector, keystoreOrgFile,
                     keystoreSSLFile, keystoreTrustoreFile);
         } else {
-            updatedConnector.setLocalConfiguration(connector.getLocalConfiguration());
+            updatedConnector.setLocalConfiguration(null);
         }
     }
 
     public Connector getConnectorByID(final long connectorId,
-                                      final RedirectAttributes redirectAttributes) {
+            final RedirectAttributes redirectAttributes) {
         final Connector connector = connectorService.getConnector(connectorId);
         if (connector == null) {
             redirectAttributes.addFlashAttribute(CSS, DANGER);
@@ -639,7 +633,7 @@ public class ConnectorController {
     }
 
     public ModelAndView getConnectorView(final @PathVariable("id") long connectorId,
-                                         final RedirectAttributes redirectAttributes, final String targetViewName) {
+            final RedirectAttributes redirectAttributes, final String targetViewName) {
         final Connector connector = getConnectorByID(connectorId, redirectAttributes);
         if (connector == null) {
             return new ModelAndView(REDIRECT_TO_CONNECTORS);
@@ -649,7 +643,7 @@ public class ConnectorController {
     }
 
     private void saveFileToResponse(final long connectorId, final HttpServletResponse response,
-                                    final Path file) throws ConnectorException {
+            final Path file) throws ConnectorException {
         try {
             Files.copy(file, response.getOutputStream());
             response.getOutputStream().flush();
@@ -663,7 +657,7 @@ public class ConnectorController {
 
     @GetMapping("/connectors/connector/{id}/testToProd")
     public ModelAndView testToProd(@PathVariable("id") final long connectorId,
-                                   final RedirectAttributes redirectAttributes, final Model model, final String type)
+            final RedirectAttributes redirectAttributes, final Model model)
             throws ConnectorException {
         final Connector connector = getConnectorByID(connectorId, redirectAttributes);
         // Busco el wsdl original.
@@ -673,7 +667,7 @@ public class ConnectorController {
         final File file = fileManagerService.getConnectorWSDLAndSchemasOnZipFile(filePath);
         final MultipartFile multipartFile = convertFileToMultipartFile(connectorId, filePath, file);
 
-        uploadAndParseWSDL(multipartFile, model, connector, redirectAttributes, type);
+        uploadAndParseWSDL(multipartFile, model, connector, redirectAttributes);
 
         // Seteo el tipo de servidor en produccion
         connector.setType(ConnectorType.PRODUCCION.getEnvironment());
@@ -688,7 +682,7 @@ public class ConnectorController {
     }
 
     private MultipartFile convertFileToMultipartFile(final long connectorId, final Path filePath,
-                                                     final File file) throws ConnectorException {
+            final File file) throws ConnectorException {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {

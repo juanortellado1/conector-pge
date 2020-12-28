@@ -1,8 +1,15 @@
 package gub.agesic.connector.services.xpathparser;
 
-import gub.agesic.connector.enums.SoapVersion;
-import gub.agesic.connector.exceptions.ConnectorException;
-import gub.agesic.connector.pojo.SoapVersionInfo;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.List;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,21 +22,12 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.util.List;
+import gub.agesic.connector.exceptions.ConnectorException;
 
 @Service
 public class DefaultXPathParserService implements XPathParserService {
 
     public static final String HTTP_SCHEMAS_WSDL = "http://schemas.xmlsoap.org/wsdl";
-    public static final String HTTP_SCHEMAS_WSDL_SOAP_V1 = "http://schemas.xmlsoap.org/wsdl/soap/";
-    public static final String HTTP_SCHEMAS_WSDL_SOAP_V2 = "http://schemas.xmlsoap.org/wsdl/soap12/";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XPathParserService.class);
 
@@ -46,7 +44,11 @@ public class DefaultXPathParserService implements XPathParserService {
 
     @Override
     public String getStringNodeValue(final Node node) {
-        return node == null ? "" : node.getNodeValue();
+        if (node == null) {
+            return "";
+        } else {
+            return node.getNodeValue();
+        }
     }
 
     @Override
@@ -78,7 +80,7 @@ public class DefaultXPathParserService implements XPathParserService {
 
     @Override
     public Node getXPathResultNode(final String filterExpression, final Node nodeSource,
-                                   final int itemPos) {
+            final int itemPos) {
         final List<Node> nodeList = getXPathResultNodeList(filterExpression, nodeSource);
         if (nodeList.size() > 0) {
             return nodeList.get(0).getChildNodes().item(itemPos);
@@ -123,7 +125,7 @@ public class DefaultXPathParserService implements XPathParserService {
 
     @Override
     public Node getFileDocumentElement(final DocumentBuilderFactory factory,
-                                       final MultipartFile file) throws ConnectorException {
+            final MultipartFile file) throws ConnectorException {
         final Document doc;
         try {
             doc = factory.newDocumentBuilder().parse(file.getInputStream());
@@ -150,61 +152,4 @@ public class DefaultXPathParserService implements XPathParserService {
         return false;
     }
 
-    /**
-     * Posibles ressultados:
-     *
-     * - Version Soap 1.1 (por defecto)
-     *      prefix = "undefined"
-     *      version = "1.1"
-     *
-     * - Version Soap 1.2
-     *      prefix = [Se obtiene de parsear el nodo que se pasa como parámetro]
-     *      version = "1.2"
-     *
-     * - Version Soap 1.1 y Soap 1.2 (multiple)
-     *      prefix = [Se obtiene de parsear el nodo que se pasa como parámetro, corresponde a Soap 1.2]
-     *      version = "multiple"
-     */
-    @Override
-    public SoapVersionInfo soapVersionInfo(final Node nodeSource) {
-        SoapVersionInfo versionInfo = new SoapVersionInfo();
-        boolean isV1 = false, isV2 = false;
-        final NamedNodeMap attributes = nodeSource.getAttributes();
-        for (int i = 0; i < attributes.getLength(); i++) {
-            final Node attributeNode = attributes.item(i);
-            final String nodeValue = attributeNode.getNodeValue();
-            if (nodeValue.contains(HTTP_SCHEMAS_WSDL_SOAP_V1)) {
-                versionInfo.setVersion(SoapVersion.V1_1);
-                isV1 = true;
-            }
-            if (nodeValue.contains(HTTP_SCHEMAS_WSDL_SOAP_V2)) {
-                //No es suficiente con que este declarado el esquema, se debe usar el prefijo en algun elemento.
-                String nodeName = attributeNode.getNodeName();
-                if (nodeName.contains(":")) {
-                    String prefix = nodeName.substring(nodeName.indexOf(":") + 1);
-                    versionInfo.setPrefix(prefix);
-                    isV2 = nodeNameContains(nodeSource, prefix, 3);
-                    if (isV2) versionInfo.setVersion(SoapVersion.V1_2);
-                }
-            }
-            if (isV1 && isV2) {
-                versionInfo.setVersion(SoapVersion.MULTIPLE);
-                break;
-            }
-        }
-        return versionInfo;
-    }
-
-    //Buscar recursivamente, hasta cierto nivel, si un nodo contiene determinado prefijo en su nombre
-    private boolean nodeNameContains(Node node, String prefix, int level) {
-        if (node.getNodeName().contains(prefix)) return true;
-        if (level == 0) return false;
-        NodeList children = node.getChildNodes();
-        for (int i = 0; i < children.getLength(); i++) {
-            if (nodeNameContains(children.item(i), prefix, --level)) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
